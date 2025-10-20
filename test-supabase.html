@@ -1,0 +1,120 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Test - Poop Tracker</title>
+    <script src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'></script>
+    <script src='supabase-config.js'></script>
+    <style>
+        body { font-family: Arial; padding: 20px; max-width: 800px; margin: 0 auto; }
+        button { padding: 12px 24px; margin: 10px 5px; cursor: pointer; background: #4169E1; color: white; border: none; border-radius: 8px; font-size: 16px; }
+        button:hover { background: #002BD8; }
+        .result { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 8px; white-space: pre-wrap; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        h1 { color: #4169E1; }
+    </style>
+</head>
+<body>
+    <h1> Supabase Database Test</h1>
+    
+    <div>
+        <button onclick='testConnection()'>1. Test Connection</button>
+        <button onclick='checkAuth()'>2. Check Auth</button>
+        <button onclick='addTestEntry()'>3. Add Test Entry</button>
+        <button onclick='getAllEntries()'>4. Get All Entries</button>
+        <button onclick='clearResults()'>Clear Results</button>
+    </div>
+
+    <div id='results'></div>
+
+    <script>
+        function addResult(message, isSuccess = true) {
+            const div = document.createElement('div');
+            div.className = 'result ' + (isSuccess ? 'success' : 'error');
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            document.getElementById('results').appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testConnection() {
+            try {
+                addResult('Testing Supabase connection...');
+                
+                const { data, error } = await supabaseClient
+                    .from('poop_entries')
+                    .select('count');
+                
+                if (error) throw error;
+                
+                addResult(' Connection successful! Database is accessible.', true);
+            } catch (error) {
+                addResult(' Connection failed: ' + error.message, false);
+            }
+        }
+
+        async function checkAuth() {
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                
+                if (user) {
+                    addResult(' Logged in as: ' + user.email, true);
+                } else {
+                    addResult('ℹ Not logged in (guest mode)', true);
+                }
+            } catch (error) {
+                addResult(' Auth check failed: ' + error.message, false);
+            }
+        }
+
+        async function addTestEntry() {
+            try {
+                addResult('Adding test entry...');
+                
+                const testEntry = {
+                    id: 'test-' + Date.now(),
+                    timestamp: new Date().toISOString(),
+                    duration: 5,
+                    bristol: '4',
+                    color: 'Brown',
+                    volume: 'medium',
+                    shape: 'Log',
+                    smell: 'Normal',
+                    pain: 0,
+                    hasBlood: false,
+                    hasMucus: false,
+                    symptoms: ['None'],
+                    notes: 'Test entry from test page'
+                };
+
+                const result = await PoopDB.createEntry(testEntry);
+                
+                addResult(' Test entry added successfully!', true);
+                addResult('Entry ID: ' + testEntry.id, true);
+            } catch (error) {
+                addResult(' Failed to add entry: ' + error.message, false);
+                console.error('Full error:', error);
+            }
+        }
+
+        async function getAllEntries() {
+            try {
+                addResult('Fetching all entries...');
+                
+                const entries = await PoopDB.getAllEntries();
+                
+                addResult(' Found ' + entries.length + ' entries', true);
+                
+                if (entries.length > 0) {
+                    addResult('Latest entry: ' + JSON.stringify(entries[0], null, 2), true);
+                }
+            } catch (error) {
+                addResult(' Failed to fetch entries: ' + error.message, false);
+                console.error('Full error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

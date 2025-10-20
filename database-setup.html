@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Setup - Poop Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-royal-600 to-royal-700 text-white rounded-2xl p-8 mb-6 shadow-xl">
+            <h1 class="text-3xl font-bold mb-2">🚽 Database Setup</h1>
+            <p class="text-royal-100">Connect your app to Supabase cloud database</p>
+        </div>
+
+        <!-- Status Check -->
+        <div class="bg-white rounded-2xl p-6 shadow-md mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📊 Current Status</h2>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-database text-gray-600"></i>
+                        <span class="font-semibold">Local Storage Entries</span>
+                    </div>
+                    <span id="local-count" class="text-2xl font-bold text-royal-600">0</span>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-cloud text-gray-600"></i>
+                        <span class="font-semibold">Supabase Entries</span>
+                    </div>
+                    <span id="supabase-count" class="text-2xl font-bold text-emerald-600">-</span>
+                </div>
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-wifi text-gray-600"></i>
+                        <span class="font-semibold">Database Connection</span>
+                    </div>
+                    <span id="connection-status" class="text-sm font-bold text-gray-400">Checking...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setup Instructions -->
+        <div class="bg-white rounded-2xl p-6 shadow-md mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📝 Setup Steps</h2>
+            
+            <div class="space-y-4">
+                <!-- Step 1 -->
+                <div class="border-l-4 border-royal-600 pl-4">
+                    <h3 class="font-bold text-gray-800 mb-2">Step 1: Run SQL in Supabase</h3>
+                    <p class="text-sm text-gray-600 mb-3">Go to your Supabase dashboard → SQL Editor → New query</p>
+                    <button onclick="copySQLFile()" class="bg-royal-600 text-white px-4 py-2 rounded-lg hover:bg-royal-700 transition">
+                        <i class="fa-solid fa-copy mr-2"></i>Copy SQL Commands
+                    </button>
+                    <p class="text-xs text-gray-500 mt-2">📄 Or open: <code class="bg-gray-100 px-2 py-1 rounded">supabase-setup.sql</code></p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="border-l-4 border-emerald-600 pl-4">
+                    <h3 class="font-bold text-gray-800 mb-2">Step 2: Check Connection</h3>
+                    <button onclick="testConnection()" id="test-btn" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition">
+                        <i class="fa-solid fa-plug mr-2"></i>Test Connection
+                    </button>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="border-l-4 border-amber-600 pl-4">
+                    <h3 class="font-bold text-gray-800 mb-2">Step 3: Migrate Data</h3>
+                    <p class="text-sm text-gray-600 mb-3">Transfer existing data from localStorage to Supabase</p>
+                    <button onclick="migrateData()" id="migrate-btn" class="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition" disabled>
+                        <i class="fa-solid fa-upload mr-2"></i>Migrate to Cloud
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Migration Log -->
+        <div class="bg-white rounded-2xl p-6 shadow-md">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📋 Activity Log</h2>
+            <div id="log" class="space-y-2 max-h-96 overflow-y-auto">
+                <p class="text-gray-400 text-sm">No activity yet...</p>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="mt-6 text-center">
+            <a href="mobile-index.html" class="inline-block bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition">
+                <i class="fa-solid fa-arrow-left mr-2"></i>Back to App
+            </a>
+        </div>
+    </div>
+
+    <script>
+        let supabaseConnected = false;
+
+        // Initialize
+        checkStatus();
+
+        async function checkStatus() {
+            // Check localStorage
+            const localLogs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+            document.getElementById('local-count').textContent = localLogs.length;
+
+            // Check Supabase connection
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                
+                if (!session && localStorage.getItem('guestMode') !== 'true') {
+                    addLog('⚠️ Not signed in - Please sign in to use cloud storage', 'warning');
+                    document.getElementById('connection-status').innerHTML = '<span class="text-amber-600">Not Signed In</span>';
+                    return;
+                }
+
+                const { data, error, count } = await supabaseClient
+                    .from('poop_entries')
+                    .select('*', { count: 'exact', head: true });
+
+                if (error && error.code !== 'PGRST301') {
+                    throw error;
+                }
+
+                if (error && error.code === 'PGRST301') {
+                    // RLS blocking (expected if not signed in)
+                    addLog('⚠️ Database exists but access restricted - Sign in first', 'warning');
+                    document.getElementById('connection-status').innerHTML = '<span class="text-amber-600">Sign In Required</span>';
+                    document.getElementById('supabase-count').textContent = '?';
+                } else {
+                    supabaseConnected = true;
+                    document.getElementById('connection-status').innerHTML = '<span class="text-green-600">Connected ✓</span>';
+                    document.getElementById('supabase-count').textContent = count || 0;
+                    document.getElementById('migrate-btn').disabled = false;
+                    addLog('✅ Successfully connected to Supabase', 'success');
+                }
+            } catch (error) {
+                console.error('Connection error:', error);
+                document.getElementById('connection-status').innerHTML = '<span class="text-red-600">Error ✗</span>';
+                document.getElementById('supabase-count').textContent = '✗';
+                addLog('❌ Connection failed: ' + error.message, 'error');
+            }
+        }
+
+        async function testConnection() {
+            const btn = document.getElementById('test-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Testing...';
+            
+            addLog('🔍 Testing database connection...', 'info');
+            
+            try {
+                // Check auth
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                
+                if (!session && localStorage.getItem('guestMode') !== 'true') {
+                    throw new Error('Please sign in first');
+                }
+
+                // Test database query
+                const { data, error } = await supabaseClient
+                    .from('poop_entries')
+                    .select('count');
+
+                if (error) throw error;
+
+                addLog('✅ Database connection successful!', 'success');
+                supabaseConnected = true;
+                document.getElementById('migrate-btn').disabled = false;
+                await checkStatus();
+            } catch (error) {
+                addLog('❌ Connection test failed: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-plug mr-2"></i>Test Connection';
+            }
+        }
+
+        async function migrateData() {
+            if (!supabaseConnected) {
+                alert('Please test connection first and make sure you are signed in!');
+                return;
+            }
+
+            const localLogs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+            
+            if (localLogs.length === 0) {
+                alert('No local data to migrate!');
+                return;
+            }
+
+            if (!confirm(`Migrate ${localLogs.length} entries to Supabase?\n\nThis will upload all your localStorage data to the cloud.`)) {
+                return;
+            }
+
+            const btn = document.getElementById('migrate-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Migrating...';
+
+            addLog(`🚀 Starting migration of ${localLogs.length} entries...`, 'info');
+
+            try {
+                let successCount = 0;
+                let errorCount = 0;
+
+                for (let i = 0; i < localLogs.length; i++) {
+                    const log = localLogs[i];
+                    
+                    try {
+                        await PoopDB.createEntry({
+                            id: log.id,
+                            timestamp: log.timestamp,
+                            duration: log.duration,
+                            bristol: log.bristol,
+                            color: log.color,
+                            volume: log.volume,
+                            shape: log.shape || '',
+                            smell: log.smell || '',
+                            pain: log.pain || 0,
+                            hasBlood: log.hasBlood || false,
+                            hasMucus: log.hasMucus || false,
+                            symptoms: log.symptoms || [],
+                            notes: log.notes || ''
+                        });
+                        
+                        successCount++;
+                        addLog(`✓ Migrated entry ${i + 1}/${localLogs.length}`, 'success');
+                    } catch (error) {
+                        errorCount++;
+                        addLog(`✗ Failed to migrate entry ${i + 1}: ${error.message}`, 'error');
+                    }
+                }
+
+                addLog(`🎉 Migration complete! ${successCount} successful, ${errorCount} failed`, 'success');
+                
+                if (errorCount === 0) {
+                    if (confirm('Migration successful! Keep local backup?\n\nClick OK to keep localStorage data\nClick Cancel to clear it (data is now in cloud)')) {
+                        addLog('📦 Keeping local backup', 'info');
+                    } else {
+                        localStorage.removeItem('poopLogsProV2');
+                        addLog('🗑️ Cleared local storage', 'info');
+                    }
+                }
+
+                await checkStatus();
+            } catch (error) {
+                addLog('❌ Migration failed: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-upload mr-2"></i>Migrate to Cloud';
+            }
+        }
+
+        function copySQLFile() {
+            const sqlContent = `-- Run this in Supabase SQL Editor
+
+-- Go to: https://supabase.com/dashboard/project/rhxuivbxxwaccbaltqbr/sql
+-- Click "New Query"
+-- Paste this SQL and click "Run"
+
+-- See supabase-setup.sql file for complete SQL commands`;
+            
+            navigator.clipboard.writeText(sqlContent).then(() => {
+                addLog('📋 Instructions copied! Now open supabase-setup.sql file for full SQL', 'success');
+                alert('Copied! Now:\n1. Open supabase-setup.sql file\n2. Copy ALL the SQL from that file\n3. Paste in Supabase SQL Editor\n4. Run it');
+            });
+        }
+
+        function addLog(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            
+            if (logDiv.children.length === 1 && logDiv.children[0].textContent === 'No activity yet...') {
+                logDiv.innerHTML = '';
+            }
+
+            const colors = {
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                warning: 'bg-amber-50 border-amber-200 text-amber-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800'
+            };
+
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `p-3 rounded-lg border ${colors[type]} text-sm`;
+            logEntry.innerHTML = `<span class="text-xs opacity-60">[${timestamp}]</span> ${message}`;
+            
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    </script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        royal: {
+                            50: '#f0f5ff',
+                            100: '#e0ebff',
+                            200: '#c7d7fe',
+                            300: '#a4bcfd',
+                            400: '#8a9ff5',
+                            500: '#4169E1',
+                            600: '#3259f3',
+                            700: '#1944f1',
+                            800: '#002BD8',
+                            900: '#001a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

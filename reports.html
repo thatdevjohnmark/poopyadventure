@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#4169E1">
+    <title>Reports - Poopy Adventure Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              royal: {
+                50: '#f0f5ff',
+                100: '#e0ebff',
+                200: '#c7d7fe',
+                300: '#a4bcfd',
+                400: '#8a9ff5',
+                500: '#4169E1',
+                600: '#3259f3',
+                700: '#1944f1',
+                800: '#002BD8',
+                900: '#001a8a'
+              },
+              champagne: {
+                50: '#fdfbf7',
+                100: '#F7E7CE',
+                200: '#f0d9b5',
+                300: '#e8ca9d'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+            overflow-x: hidden;
+        }
+        
+        .safe-top {
+            padding-top: max(16px, env(safe-area-inset-top));
+        }
+        
+        .safe-bottom {
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
+        }
+        
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .btn-press:active {
+            transform: scale(0.96);
+        }
+        
+        .btn-press {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen">
+
+    <!-- Fixed Mobile Header -->
+    <header class="sticky top-0 z-50 bg-royal-600 text-white shadow-lg safe-top">
+        <div class="px-4 py-4 flex items-center justify-between">
+            <a href="mobile-index.html" class="btn-press text-white">
+                <i class="fa-solid fa-arrow-left text-xl"></i>
+            </a>
+            <h1 class="text-xl font-bold">Reports & Analytics</h1>
+            <div class="w-6"></div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="px-4 pt-4 pb-24">
+
+        <!-- Time Period Selector -->
+        <div class="bg-white rounded-2xl p-4 shadow-md mb-4">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <i class="fa-solid fa-calendar-days mr-2"></i>Time Period
+            </label>
+            <select id="time-period" onchange="updateReports()" class="w-full p-3 border-2 border-gray-200 rounded-xl text-base focus:border-royal-500">
+                <option value="7">Last 7 Days</option>
+                <option value="14">Last 14 Days</option>
+                <option value="30" selected>Last 30 Days</option>
+                <option value="90">Last 90 Days</option>
+                <option value="all">All Time</option>
+            </select>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="bg-white rounded-2xl p-5 shadow-md mb-4">
+            <h2 class="text-lg font-bold text-royal-800 mb-4">
+                <i class="fa-solid fa-chart-line mr-2"></i>Summary
+            </h2>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-royal-50 rounded-xl p-3">
+                    <div class="text-xs font-semibold text-royal-600 uppercase mb-1">Total Entries</div>
+                    <div id="stat-total" class="text-2xl font-bold text-royal-800">0</div>
+                </div>
+                <div class="bg-royal-50 rounded-xl p-3">
+                    <div class="text-xs font-semibold text-royal-600 uppercase mb-1">Avg/Day</div>
+                    <div id="stat-avg-day" class="text-2xl font-bold text-royal-800">0</div>
+                </div>
+                <div class="bg-royal-50 rounded-xl p-3">
+                    <div class="text-xs font-semibold text-royal-600 uppercase mb-1">Avg Duration</div>
+                    <div id="stat-avg-duration" class="text-2xl font-bold text-royal-800">0 min</div>
+                </div>
+                <div class="bg-royal-50 rounded-xl p-3">
+                    <div class="text-xs font-semibold text-royal-600 uppercase mb-1">Most Common</div>
+                    <div id="stat-most-common" class="text-2xl font-bold text-royal-800">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bristol Scale Distribution -->
+        <div class="bg-white rounded-2xl p-5 shadow-md mb-4">
+            <h2 class="text-lg font-bold text-royal-800 mb-4">
+                <i class="fa-solid fa-chart-pie mr-2"></i>Bristol Scale Distribution
+            </h2>
+            <canvas id="bristol-chart" class="w-full" style="max-height: 250px;"></canvas>
+            <div id="bristol-breakdown" class="mt-4 space-y-2">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
+        <!-- Color Distribution -->
+        <div class="bg-white rounded-2xl p-5 shadow-md mb-4">
+            <h2 class="text-lg font-bold text-royal-800 mb-4">
+                <i class="fa-solid fa-palette mr-2"></i>Color Distribution
+            </h2>
+            <canvas id="color-chart" class="w-full" style="max-height: 200px;"></canvas>
+        </div>
+
+        <!-- Frequency Over Time -->
+        <div class="bg-white rounded-2xl p-5 shadow-md mb-4">
+            <h2 class="text-lg font-bold text-royal-800 mb-4">
+                <i class="fa-solid fa-chart-line mr-2"></i>Frequency Trend
+            </h2>
+            <canvas id="frequency-chart" class="w-full" style="max-height: 200px;"></canvas>
+        </div>
+
+        <!-- Health Indicators -->
+        <div class="bg-white rounded-2xl p-5 shadow-md mb-4">
+            <h2 class="text-lg font-bold text-royal-800 mb-4">
+                <i class="fa-solid fa-heart-pulse mr-2"></i>Health Indicators
+            </h2>
+            <div class="space-y-3">
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold text-gray-700">Blood Detected</span>
+                        <span id="health-blood" class="text-lg font-bold text-red-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="health-blood-bar" class="bg-red-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold text-gray-700">Mucus Detected</span>
+                        <span id="health-mucus" class="text-lg font-bold text-amber-600">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="health-mucus-bar" class="bg-amber-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold text-gray-700">Average Pain</span>
+                        <span id="health-pain" class="text-lg font-bold text-orange-600">0/10</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div id="health-pain-bar" class="bg-orange-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Common Symptoms -->
+        <div class="bg-white rounded-2xl p-5 shadow-md mb-4">
+            <h2 class="text-lg font-bold text-royal-800 mb-4">
+                <i class="fa-solid fa-notes-medical mr-2"></i>Common Symptoms
+            </h2>
+            <div id="symptoms-list" class="space-y-2">
+                <p class="text-gray-400 text-center py-4">No symptoms recorded</p>
+            </div>
+        </div>
+
+        <!-- Best Time Analysis -->
+        <div class="bg-white rounded-2xl p-5 shadow-md mb-4">
+            <h2 class="text-lg font-bold text-royal-800 mb-4">
+                <i class="fa-solid fa-clock mr-2"></i>Time of Day Analysis
+            </h2>
+            <canvas id="time-chart" class="w-full" style="max-height: 200px;"></canvas>
+        </div>
+
+        <!-- Consistency Score -->
+        <div class="bg-white rounded-2xl p-5 shadow-md mb-4">
+            <h2 class="text-lg font-bold text-royal-800 mb-4">
+                <i class="fa-solid fa-star mr-2"></i>Health Score
+            </h2>
+            <div class="text-center">
+                <div id="health-score" class="text-6xl font-bold text-royal-600 mb-2">0</div>
+                <div id="health-rating" class="text-lg text-gray-600 mb-4">Calculating...</div>
+                <div class="bg-gray-200 rounded-full h-3 w-full">
+                    <div id="health-score-bar" class="bg-gradient-to-r from-royal-500 to-royal-600 h-3 rounded-full transition-all" style="width: 0%"></div>
+                </div>
+                <p class="text-sm text-gray-500 mt-4">Based on Bristol type consistency, regularity, and absence of warning signs</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let bristolChart, colorChart, frequencyChart, timeChart;
+
+        function updateReports() {
+            const days = parseInt(document.getElementById('time-period').value);
+            const logs = getFilteredLogs(days);
+
+            updateSummaryStats(logs);
+            updateBristolChart(logs);
+            updateColorChart(logs);
+            updateFrequencyChart(logs, days);
+            updateHealthIndicators(logs);
+            updateSymptoms(logs);
+            updateTimeAnalysis(logs);
+            updateHealthScore(logs);
+        }
+
+        function getFilteredLogs(days) {
+            const allLogs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+            
+            if (days === 'all') return allLogs;
+
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - parseInt(days));
+
+            return allLogs.filter(log => new Date(log.timestamp) >= cutoffDate);
+        }
+
+        function updateSummaryStats(logs) {
+            // Total entries
+            document.getElementById('stat-total').textContent = logs.length;
+
+            // Average per day
+            if (logs.length > 0) {
+                const days = parseInt(document.getElementById('time-period').value);
+                const avgPerDay = days === 'all' ? 
+                    (logs.length / Math.max(1, getDaysSinceFirst(logs))).toFixed(1) :
+                    (logs.length / Math.min(days, getDaysSinceFirst(logs))).toFixed(1);
+                document.getElementById('stat-avg-day').textContent = avgPerDay;
+
+                // Average duration
+                const avgDuration = (logs.reduce((sum, log) => sum + (log.duration || 0), 0) / logs.length).toFixed(1);
+                document.getElementById('stat-avg-duration').textContent = avgDuration + ' min';
+
+                // Most common Bristol type
+                const bristolCounts = {};
+                logs.forEach(log => {
+                    bristolCounts[log.bristol] = (bristolCounts[log.bristol] || 0) + 1;
+                });
+                const mostCommon = Object.entries(bristolCounts).sort((a, b) => b[1] - a[1])[0];
+                document.getElementById('stat-most-common').textContent = 'Type ' + mostCommon[0];
+            }
+        }
+
+        function getDaysSinceFirst(logs) {
+            if (logs.length === 0) return 1;
+            const first = new Date(logs[logs.length - 1].timestamp);
+            return Math.max(1, Math.ceil((Date.now() - first) / (1000 * 60 * 60 * 24)));
+        }
+
+        function updateBristolChart(logs) {
+            const bristolCounts = [0, 0, 0, 0, 0, 0, 0];
+            logs.forEach(log => {
+                const type = parseInt(log.bristol) - 1;
+                if (type >= 0 && type < 7) bristolCounts[type]++;
+            });
+
+            if (bristolChart) bristolChart.destroy();
+
+            const ctx = document.getElementById('bristol-chart').getContext('2d');
+            bristolChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Type 1', 'Type 2', 'Type 3', 'Type 4', 'Type 5', 'Type 6', 'Type 7'],
+                    datasets: [{
+                        data: bristolCounts,
+                        backgroundColor: [
+                            '#fee2e2', '#fed7aa', '#fef08a', '#86efac', 
+                            '#a5f3fc', '#bfdbfe', '#ddd6fe'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Breakdown list
+            const breakdown = document.getElementById('bristol-breakdown');
+            breakdown.innerHTML = bristolCounts.map((count, i) => {
+                const percentage = logs.length > 0 ? ((count / logs.length) * 100).toFixed(1) : 0;
+                return `
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Type ${i + 1}</span>
+                        <div class="flex items-center gap-2">
+                            <div class="bg-gray-200 rounded-full h-2 w-24">
+                                <div class="bg-royal-500 h-2 rounded-full" style="width: ${percentage}%"></div>
+                            </div>
+                            <span class="text-sm font-semibold text-gray-700 w-12">${percentage}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateColorChart(logs) {
+            const colorCounts = {};
+            logs.forEach(log => {
+                colorCounts[log.color] = (colorCounts[log.color] || 0) + 1;
+            });
+
+            if (colorChart) colorChart.destroy();
+
+            // Map color names to actual hex colors
+            const colorMap = {
+                'Brown': '#8B4513',
+                'Dark Brown': '#654321',
+                'Light Brown': '#C4A57B',
+                'Yellow': '#FFD700',
+                'Green': '#228B22',
+                'Black': '#000000',
+                'Red': '#DC143C',
+                'Pale': '#F5DEB3'
+            };
+
+            // Get actual colors for the chart
+            const chartColors = Object.keys(colorCounts).map(colorName => {
+                return colorMap[colorName] || '#808080'; // Default gray if color not found
+            });
+
+            const ctx = document.getElementById('color-chart').getContext('2d');
+            colorChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(colorCounts),
+                    datasets: [{
+                        label: 'Count',
+                        data: Object.values(colorCounts),
+                        backgroundColor: chartColors,
+                        borderColor: chartColors.map(color => {
+                            // Add darker border for better visibility
+                            return color === '#FFD700' || color === '#F5DEB3' || color === '#C4A57B' ? '#999999' : color;
+                        }),
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed.y / total) * 100).toFixed(1);
+                                    return `Count: ${context.parsed.y} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateFrequencyChart(logs, days) {
+            const daysToShow = days === 'all' ? 30 : Math.min(days, 30);
+            const frequencyData = new Array(daysToShow).fill(0);
+            const labels = [];
+
+            for (let i = daysToShow - 1; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+                logs.forEach(log => {
+                    const logDate = new Date(log.timestamp);
+                    if (logDate.toDateString() === date.toDateString()) {
+                        frequencyData[daysToShow - 1 - i]++;
+                    }
+                });
+            }
+
+            if (frequencyChart) frequencyChart.destroy();
+
+            const ctx = document.getElementById('frequency-chart').getContext('2d');
+            frequencyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Entries',
+                        data: frequencyData,
+                        borderColor: '#4169E1',
+                        backgroundColor: 'rgba(65, 105, 225, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateHealthIndicators(logs) {
+            if (logs.length === 0) {
+                document.getElementById('health-blood').textContent = '0%';
+                document.getElementById('health-blood-bar').style.width = '0%';
+                document.getElementById('health-mucus').textContent = '0%';
+                document.getElementById('health-mucus-bar').style.width = '0%';
+                document.getElementById('health-pain').textContent = '0/10';
+                document.getElementById('health-pain-bar').style.width = '0%';
+                return;
+            }
+
+            const bloodCount = logs.filter(log => log.hasBlood).length;
+            const mucusCount = logs.filter(log => log.hasMucus).length;
+            const avgPain = (logs.reduce((sum, log) => sum + parseInt(log.pain || 0), 0) / logs.length).toFixed(1);
+
+            const bloodPct = ((bloodCount / logs.length) * 100).toFixed(1);
+            const mucusPct = ((mucusCount / logs.length) * 100).toFixed(1);
+            const painPct = (avgPain / 10) * 100;
+
+            document.getElementById('health-blood').textContent = bloodPct + '%';
+            document.getElementById('health-blood-bar').style.width = bloodPct + '%';
+            document.getElementById('health-mucus').textContent = mucusPct + '%';
+            document.getElementById('health-mucus-bar').style.width = mucusPct + '%';
+            document.getElementById('health-pain').textContent = avgPain + '/10';
+            document.getElementById('health-pain-bar').style.width = painPct + '%';
+        }
+
+        function updateSymptoms(logs) {
+            const symptomCounts = {};
+            logs.forEach(log => {
+                if (log.symptoms && Array.isArray(log.symptoms)) {
+                    log.symptoms.forEach(symptom => {
+                        symptomCounts[symptom] = (symptomCounts[symptom] || 0) + 1;
+                    });
+                }
+            });
+
+            const container = document.getElementById('symptoms-list');
+            
+            if (Object.keys(symptomCounts).length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-4">No symptoms recorded</p>';
+                return;
+            }
+
+            const sorted = Object.entries(symptomCounts).sort((a, b) => b[1] - a[1]);
+            container.innerHTML = sorted.map(([symptom, count]) => {
+                const percentage = ((count / logs.length) * 100).toFixed(1);
+                return `
+                    <div class="flex justify-between items-center bg-gray-50 rounded-xl p-3">
+                        <span class="font-semibold text-gray-700">${symptom}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-600">${count} times</span>
+                            <span class="text-sm font-bold text-royal-600">${percentage}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateTimeAnalysis(logs) {
+            const timeSlots = new Array(24).fill(0);
+            
+            logs.forEach(log => {
+                const hour = new Date(log.timestamp).getHours();
+                timeSlots[hour]++;
+            });
+
+            if (timeChart) timeChart.destroy();
+
+            const ctx = document.getElementById('time-chart').getContext('2d');
+            timeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Entries',
+                        data: timeSlots,
+                        backgroundColor: '#4169E1',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 90,
+                                minRotation: 90,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateHealthScore(logs) {
+            if (logs.length === 0) {
+                document.getElementById('health-score').textContent = '-';
+                document.getElementById('health-rating').textContent = 'No data available';
+                document.getElementById('health-score-bar').style.width = '0%';
+                return;
+            }
+
+            if (logs.length < 3) {
+                document.getElementById('health-score').textContent = '-';
+                document.getElementById('health-rating').textContent = 'Need at least 3 entries';
+                document.getElementById('health-score-bar').style.width = '0%';
+                return;
+            }
+
+            let score = 100;
+
+            // Deduct for non-ideal Bristol types (Types 3-5 are ideal)
+            const avgBristol = logs.reduce((sum, log) => sum + parseInt(log.bristol || 4), 0) / logs.length;
+            if (avgBristol < 2) {
+                score -= 30; // Severe constipation
+            } else if (avgBristol < 3) {
+                score -= 15; // Mild constipation
+            } else if (avgBristol > 6) {
+                score -= 30; // Severe diarrhea
+            } else if (avgBristol > 5) {
+                score -= 15; // Mild diarrhea
+            }
+
+            // Deduct for blood/mucus (check both hasBlood/hasMucus and blood/mucus properties)
+            const bloodCount = logs.filter(log => log.hasBlood === true || log.blood === true).length;
+            const mucusCount = logs.filter(log => log.hasMucus === true || log.mucus === true).length;
+            
+            if (bloodCount > 0) {
+                const bloodPct = (bloodCount / logs.length) * 100;
+                score -= bloodPct * 2; // Major concern
+            }
+            
+            if (mucusCount > 0) {
+                const mucusPct = (mucusCount / logs.length) * 100;
+                score -= mucusPct * 1; // Moderate concern
+            }
+
+            // Deduct for pain
+            const avgPain = logs.reduce((sum, log) => sum + parseInt(log.pain || 0), 0) / logs.length;
+            score -= avgPain * 4;
+
+            // Deduct for extreme frequency
+            const days = getDaysSinceFirst(logs);
+            const avgPerDay = logs.length / days;
+            if (avgPerDay < 0.5) {
+                score -= 10; // Too infrequent
+            } else if (avgPerDay > 4) {
+                score -= 15; // Too frequent
+            } else if (avgPerDay >= 1 && avgPerDay <= 2) {
+                score += 5; // Bonus for ideal frequency
+            }
+
+            // Deduct for symptoms
+            const symptomsCount = logs.filter(log => log.symptoms && log.symptoms.length > 0).length;
+            if (symptomsCount > 0) {
+                const symptomPct = (symptomsCount / logs.length) * 100;
+                score -= symptomPct * 0.3;
+            }
+
+            score = Math.max(0, Math.min(100, Math.round(score)));
+
+            let rating = '';
+            let barColor = '';
+            if (score >= 90) {
+                rating = 'Excellent! 🌟';
+                barColor = 'from-green-500 to-green-600';
+            } else if (score >= 75) {
+                rating = 'Very Good 👍';
+                barColor = 'from-emerald-500 to-emerald-600';
+            } else if (score >= 60) {
+                rating = 'Good ✓';
+                barColor = 'from-royal-500 to-royal-600';
+            } else if (score >= 40) {
+                rating = 'Fair ⚠️';
+                barColor = 'from-amber-500 to-amber-600';
+            } else {
+                rating = 'Needs Attention ⚠️';
+                barColor = 'from-red-500 to-red-600';
+            }
+
+            document.getElementById('health-score').textContent = score;
+            document.getElementById('health-rating').textContent = rating;
+            const scoreBar = document.getElementById('health-score-bar');
+            scoreBar.style.width = score + '%';
+            scoreBar.className = `bg-gradient-to-r ${barColor} h-3 rounded-full transition-all`;
+        }
+
+        // Initialize on load
+        updateReports();
+    </script>
+</body>
+</html>

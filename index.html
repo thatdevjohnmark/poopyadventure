@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>💩 Poop Tracker Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              royal: {
+                50: '#f0f5ff',
+                100: '#e0ebff',
+                200: '#c7d7fe',
+                300: '#a4bcfd',
+                400: '#8a9ff5',
+                500: '#4169E1',
+                600: '#3259f3',
+                700: '#1944f1',
+                800: '#002BD8',
+                900: '#001a8a'
+              },
+              champagne: {
+                50: '#fdfbf7',
+                100: '#F7E7CE',
+                200: '#f0d9b5',
+                300: '#e8ca9d'
+              },
+              slate: {
+                DEFAULT: '#708090',
+                light: '#8899aa',
+                dark: '#556677'
+              },
+              cool: '#F4FDFF'
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-br from-cool via-royal-50 to-royal-100">
+    <main class="mx-auto max-w-5xl p-4 md:p-8">
+      <header class="mb-6">
+        <h1 class="text-3xl md:text-4xl font-bold text-royal-800 drop-shadow-sm flex items-center gap-3" style="font-family: 'Poppins', sans-serif;">
+          <span>💩</span> Poop Tracker Pro
+        </h1>
+        <p class="text-royal-700 mt-1 font-medium">Comprehensive gut health tracking with Bristol Stool Scale</p>
+      </header>
+
+      <!-- KPI Dashboard -->
+      <section class="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-4 mb-6">
+        <div class="bg-white/98 backdrop-blur rounded-xl p-4 text-center shadow-lg border border-royal-200/30 hover:shadow-xl transition">
+          <div class="text-xs uppercase tracking-wide text-slate font-semibold">Total</div>
+          <div id="kpiTotal" class="text-2xl md:text-3xl font-bold text-royal-600">0</div>
+        </div>
+        <div class="bg-white/98 backdrop-blur rounded-xl p-4 text-center shadow-lg border border-royal-200/30 hover:shadow-xl transition">
+          <div class="text-xs uppercase tracking-wide text-slate font-semibold">Avg min</div>
+          <div id="kpiAvg" class="text-2xl md:text-3xl font-bold text-royal-600">0.0</div>
+        </div>
+        <div class="bg-white/98 backdrop-blur rounded-xl p-4 text-center shadow-lg border border-royal-200/30 hover:shadow-xl transition">
+          <div class="text-xs uppercase tracking-wide text-slate font-semibold">Today</div>
+          <div id="kpiToday" class="text-2xl md:text-3xl font-bold text-royal-700">0</div>
+        </div>
+        <div class="bg-white/98 backdrop-blur rounded-xl p-4 text-center shadow-lg border border-royal-200/30 hover:shadow-xl transition">
+          <div class="text-xs uppercase tracking-wide text-slate font-semibold">7 days</div>
+          <div id="kpiWeek" class="text-2xl md:text-3xl font-bold text-royal-700">0</div>
+        </div>
+        <div class="bg-white/98 backdrop-blur rounded-xl p-4 text-center shadow-lg border border-royal-200/30 hover:shadow-xl transition">
+          <div class="text-xs uppercase tracking-wide text-slate font-semibold">Streak</div>
+          <div id="kpiConsistency" class="text-2xl md:text-3xl font-bold text-royal-800">0%</div>
+        </div>
+        <div class="bg-white/98 backdrop-blur rounded-xl p-4 text-center shadow-lg border border-royal-200/30 hover:shadow-xl transition">
+          <div class="text-xs uppercase tracking-wide text-slate font-semibold">Last gap</div>
+          <div id="kpiGap" class="text-2xl md:text-3xl font-bold text-royal-800">–</div>
+        </div>
+      </section>
+
+      <!-- Timer Section -->
+      <section class="bg-white/98 backdrop-blur rounded-2xl shadow-xl p-4 md:p-6 mb-6 border border-royal-200/30">
+        <div class="flex flex-col md:flex-row md:items-center gap-4">
+          <div class="grow">
+            <div class="text-sm font-semibold text-slate uppercase tracking-wide">Session Timer</div>
+            <div id="timer" class="font-mono text-5xl md:text-6xl font-bold text-royal-600 my-2">00:00</div>
+            <div id="timerStatus" class="text-sm text-slate-dark font-medium">Idle • Ready to start</div>
+          </div>
+          <div class="flex gap-2">
+            <button id="btnStart" class="px-6 py-3 rounded-xl bg-royal-600 hover:bg-royal-700 text-white font-bold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+              🚽 Start
+            </button>
+            <button id="btnStop" class="px-6 py-3 rounded-xl bg-royal-500 hover:bg-royal-600 text-white font-bold shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              ✅ Stop
+            </button>
+            <button id="btnReset" class="px-4 py-3 rounded-xl bg-champagne-100 hover:bg-champagne-200 text-slate-dark font-bold shadow transition">
+              Reset
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Entry Form -->
+      <section class="bg-white/98 backdrop-blur rounded-2xl shadow-xl p-4 md:p-6 mb-6 border border-royal-200/30">
+        <h2 class="text-2xl font-bold mb-4 text-royal-800">📝 New Entry</h2>
+        <form id="entryForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <!-- Timing Section -->
+          <div class="md:col-span-2 bg-royal-50 rounded-lg p-4 border border-royal-200/40">
+            <h3 class="font-semibold text-royal-700 mb-3">⏰ Timing</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Start time</label>
+                <input id="startAt" type="datetime-local" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">End time</label>
+                <input id="endAt" type="datetime-local" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Duration (min)</label>
+                <input id="durationMin" type="number" step="0.1" min="0" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500" placeholder="Auto-calc" />
+              </div>
+            </div>
+            <div class="mt-2 text-xs text-gray-600">
+              <span class="font-semibold">Gap since last:</span> <span id="gapSinceLast" class="font-mono">–</span>
+            </div>
+          </div>
+
+          <!-- Stool Characteristics -->
+          <div class="md:col-span-2 bg-champagne-50 rounded-lg p-4 border border-champagne-200/50">
+            <h3 class="font-semibold text-royal-700 mb-3">💩 Stool Characteristics</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Bristol Type</label>
+                <select id="bristol" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500">
+                  <option value="">Select...</option>
+                  <option value="1">Type 1 - Hard lumps</option>
+                  <option value="2">Type 2 - Lumpy sausage</option>
+                  <option value="3">Type 3 - Cracked sausage ✓</option>
+                  <option value="4">Type 4 - Smooth sausage ✓</option>
+                  <option value="5">Type 5 - Soft blobs</option>
+                  <option value="6">Type 6 - Mushy</option>
+                  <option value="7">Type 7 - Liquid</option>
+                </select>
+                <p class="text-xs text-royal-700 mt-1">💡 Types 3–4 optimal</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Shape/Texture</label>
+                <select id="shape" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500">
+                  <option value="">Select...</option>
+                  <option>Hard lumps</option>
+                  <option>Sausage cracked</option>
+                  <option>Smooth sausage</option>
+                  <option>Soft blobs</option>
+                  <option>Mushy</option>
+                  <option>Liquid</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                <select id="color" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500">
+                  <option value="">Select...</option>
+                  <option>Brown (normal)</option>
+                  <option>Light brown</option>
+                  <option>Dark brown</option>
+                  <option>Green</option>
+                  <option>Yellow</option>
+                  <option>Black</option>
+                  <option>Red</option>
+                  <option>Clay/gray</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Volume</label>
+                <select id="volume" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500">
+                  <option value="">Select...</option>
+                  <option>Small</option>
+                  <option>Medium</option>
+                  <option>Large</option>
+                  <option>Very large</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Physical Experience -->
+          <div class="md:col-span-2 bg-royal-50 rounded-lg p-4 border border-royal-200/40">
+            <h3 class="font-semibold text-royal-700 mb-3">😰 Physical Experience</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Smell intensity</label>
+                <select id="smell" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500">
+                  <option value="">Select...</option>
+                  <option>None/Mild</option>
+                  <option>Normal</option>
+                  <option>Strong</option>
+                  <option>Very strong</option>
+                  <option>Unusual odor</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Pain/Effort level</label>
+                <input id="pain" type="range" min="1" max="5" value="1" class="w-full" oninput="painOut.textContent=this.value" />
+                <div class="flex justify-between text-xs text-gray-600 mt-1">
+                  <span>1 - Easy</span>
+                  <span class="font-bold">Level: <span id="painOut">1</span></span>
+                  <span>5 - Painful</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Medical Indicators -->
+          <div class="md:col-span-2 bg-champagne-50 rounded-lg p-4 border border-champagne-200/50">
+            <h3 class="font-semibold text-royal-700 mb-3">🩺 Medical Indicators</h3>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="hasBlood" type="checkbox" class="rounded text-royal-600 focus:ring-royal-500" />
+                <span class="text-sm font-medium">Blood</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="hasMucus" type="checkbox" class="rounded text-royal-600 focus:ring-royal-500" />
+                <span class="text-sm font-medium">Mucus</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="hasUndigested" type="checkbox" class="rounded text-royal-600 focus:ring-royal-500" />
+                <span class="text-sm font-medium">Undigested food</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="floats" type="checkbox" class="rounded text-royal-600 focus:ring-royal-500" />
+                <span class="text-sm font-medium">Floats</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input id="sinks" type="checkbox" class="rounded text-royal-600 focus:ring-royal-500" />
+                <span class="text-sm font-medium">Sinks</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Symptoms -->
+          <div class="md:col-span-2 bg-royal-50 rounded-lg p-4 border border-royal-200/40">
+            <h3 class="font-semibold text-royal-700 mb-3">🤕 Associated Symptoms</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input class="symptom rounded text-royal-600 focus:ring-royal-500" type="checkbox" value="Bloating" />
+                <span class="text-sm">Bloating</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input class="symptom rounded text-royal-600 focus:ring-royal-500" type="checkbox" value="Cramping" />
+                <span class="text-sm">Cramping</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input class="symptom rounded text-royal-600 focus:ring-royal-500" type="checkbox" value="Nausea" />
+                <span class="text-sm">Nausea</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input class="symptom rounded text-royal-600 focus:ring-royal-500" type="checkbox" value="Urgency" />
+                <span class="text-sm">Urgency</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input class="symptom rounded text-royal-600 focus:ring-royal-500" type="checkbox" value="Gas" />
+                <span class="text-sm">Gas</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input class="symptom rounded text-royal-600 focus:ring-royal-500" type="checkbox" value="Incomplete evacuation" />
+                <span class="text-sm">Incomplete</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input class="symptom rounded text-royal-600 focus:ring-royal-500" type="checkbox" value="Straining" />
+                <span class="text-sm">Straining</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input class="symptom rounded text-royal-600 focus:ring-royal-500" type="checkbox" value="Burning" />
+                <span class="text-sm">Burning</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Contextual Data -->
+          <div class="md:col-span-2 bg-champagne-50 rounded-lg p-4 border border-champagne-200/50">
+            <h3 class="font-semibold text-royal-700 mb-3">📊 Contextual Data</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Recent diet</label>
+                <input id="diet" type="text" placeholder="Meals, fiber, hydration level" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Sleep hours</label>
+                <input id="sleep" type="number" step="0.5" min="0" max="24" placeholder="e.g. 7.5" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Stress level</label>
+                <input id="stress" type="range" min="1" max="5" value="3" class="w-full" oninput="stressOut.textContent=this.value" />
+                <div class="flex justify-between text-xs text-gray-600 mt-1">
+                  <span>1 - Calm</span>
+                  <span class="font-bold">Level: <span id="stressOut">3</span></span>
+                  <span>5 - Very stressed</span>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Menstrual cycle phase</label>
+                <select id="cycle" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500">
+                  <option value="">N/A or not tracked</option>
+                  <option>Menstruation</option>
+                  <option>Follicular</option>
+                  <option>Ovulation</option>
+                  <option>Luteal</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes & Hygiene -->
+          <div class="md:col-span-2 bg-royal-50 rounded-lg p-4 border border-royal-200/40">
+            <h3 class="font-semibold text-royal-700 mb-3">📋 Additional Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Hygiene method</label>
+                <select id="hygiene" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500">
+                  <option value="">Select...</option>
+                  <option>Toilet paper</option>
+                  <option>Bidet</option>
+                  <option>Wet wipes</option>
+                  <option>Water spray</option>
+                  <option>Combination</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                <input id="tags" type="text" placeholder="e.g. after coffee, post-workout, stressful day" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500" />
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes / Observations</label>
+                <textarea id="notes" rows="3" class="w-full rounded-lg border-royal-300 shadow-sm focus:ring-royal-500 focus:border-royal-500" placeholder="Any additional observations or patterns you've noticed..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-3 pt-4 border-t-2 border-royal-200">
+            <div class="text-sm text-slate-dark">
+              <span class="font-semibold">💾 Data storage:</span> Saved locally on your device only
+            </div>
+            <div class="flex gap-3">
+              <button id="btnSave" type="button" class="px-6 py-3 rounded-xl bg-royal-600 hover:bg-royal-700 text-white font-bold shadow-lg transition">
+                💾 Save Entry
+              </button>
+              <button id="btnClearForm" type="button" class="px-4 py-3 rounded-xl bg-champagne-100 hover:bg-champagne-200 text-slate-dark font-semibold shadow transition">
+                Clear Form
+              </button>
+              <button id="btnExport" type="button" class="px-4 py-3 rounded-xl bg-royal-500 hover:bg-royal-600 text-white font-semibold shadow transition">
+                📤 Export
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <!-- History -->
+      <section class="bg-white/98 backdrop-blur rounded-2xl shadow-xl p-4 md:p-6 border border-royal-200/30">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+          <h2 class="text-2xl font-bold text-royal-800">📜 History</h2>
+          <div class="flex items-center gap-3">
+            <span id="historyCount" class="text-sm text-slate-dark font-semibold">0 entries</span>
+            <button id="btnClearAll" class="px-4 py-2 rounded-lg bg-royal-700 hover:bg-royal-800 text-white font-semibold text-sm shadow transition">
+              🗑️ Delete All
+            </button>
+          </div>
+        </div>
+        <div id="history" class="space-y-3 max-h-[60vh] overflow-y-auto"></div>
+      </section>
+    </main>
+
+    <script>
+      const STORAGE_KEY = 'poopLogsProV2';
+      const el = (id) => document.getElementById(id);
+      const logs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+
+      // Timer state
+      let timerStart = null;
+      let timerId = null;
+
+      // Utility functions
+      function pad(n) { return String(n).padStart(2, '0'); }
+      function fmtClock(ms) {
+        const s = Math.floor(ms / 1000);
+        const m = Math.floor(s / 60);
+        const r = s % 60;
+        return `${pad(m)}:${pad(r)}`;
+      }
+
+      // Timer functions
+      function renderTimer() {
+        if (!timerStart) return;
+        const ms = Date.now() - timerStart.getTime();
+        el('timer').textContent = fmtClock(ms);
+      }
+
+      function startTimer() {
+        if (timerStart) return;
+        timerStart = new Date();
+        el('timerStatus').textContent = '🟢 Session in progress...';
+        el('btnStart').disabled = true;
+        el('btnStop').disabled = false;
+        const localISO = new Date(timerStart.getTime() - timerStart.getTimezoneOffset()*60000).toISOString().slice(0,16);
+        el('startAt').value = localISO;
+        timerId = setInterval(renderTimer, 500);
+        renderTimer();
+      }
+
+      function stopTimer() {
+        if (!timerStart) return;
+        clearInterval(timerId);
+        timerId = null;
+        const end = new Date();
+        const localEnd = new Date(end.getTime() - end.getTimezoneOffset()*60000).toISOString().slice(0,16);
+        el('endAt').value = localEnd;
+        const durMin = (end - timerStart) / 60000;
+        el('durationMin').value = durMin.toFixed(1);
+        el('timerStatus').textContent = '✅ Stopped • Duration: ' + durMin.toFixed(1) + ' min';
+        el('btnStart').disabled = false;
+        el('btnStop').disabled = true;
+        timerStart = null;
+        el('timer').textContent = '00:00';
+        updateGap();
+      }
+
+      function resetTimer() {
+        clearInterval(timerId);
+        timerId = null;
+        timerStart = null;
+        el('timer').textContent = '00:00';
+        el('timerStatus').textContent = 'Idle • Ready to start';
+        el('btnStart').disabled = false;
+        el('btnStop').disabled = true;
+      }
+
+      // Duration recalc on datetime change
+      function recalcDuration() {
+        const s = el('startAt').value ? new Date(el('startAt').value) : null;
+        const e = el('endAt').value ? new Date(el('endAt').value) : null;
+        if (s && e && e >= s) {
+          el('durationMin').value = ((e - s) / 60000).toFixed(1);
+        }
+      }
+
+      // Gap since last movement
+      function updateGap() {
+        if (!logs.length) { el('gapSinceLast').textContent = '–'; return; }
+        const last = logs[logs.length - 1];
+        const lastTime = new Date(last.end || last.start || last.createdAt);
+        const startVal = el('startAt').value ? new Date(el('startAt').value) : new Date();
+        const diffMs = Math.max(0, startVal - lastTime);
+        const hours = (diffMs / 3600000).toFixed(1);
+        el('gapSinceLast').textContent = `${hours} hours`;
+      }
+
+      // Save entry
+      function saveEntry() {
+        const get = (id) => el(id).value.trim();
+        const getNum = (id) => parseFloat(el(id).value || '');
+        const startVal = get('startAt');
+        const endVal = get('endAt');
+        const durationVal = getNum('durationMin');
+
+        if (!startVal && !endVal && isNaN(durationVal)) {
+          alert('⚠️ Please set start/end times or a duration.');
+          return;
+        }
+
+        let startISO = startVal ? new Date(startVal).toISOString() : new Date().toISOString();
+        let endISO = endVal ? new Date(endVal).toISOString() : null;
+        let duration = durationVal;
+        if ((!duration || isNaN(duration)) && startISO && endISO) {
+          duration = (new Date(endISO) - new Date(startISO)) / 60000;
+        }
+
+        const symptoms = Array.from(document.querySelectorAll('.symptom:checked')).map(c => c.value);
+
+        const entry = {
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+          start: startISO,
+          end: endISO,
+          duration: duration || 0,
+          bristol: get('bristol') || null,
+          shape: get('shape') || null,
+          color: get('color') || null,
+          volume: get('volume') || null,
+          smell: get('smell') || null,
+          pain: parseInt(el('pain').value, 10),
+          hasBlood: el('hasBlood').checked,
+          hasMucus: el('hasMucus').checked,
+          hasUndigested: el('hasUndigested').checked,
+          floats: el('floats').checked,
+          sinks: el('sinks').checked,
+          symptoms,
+          hygiene: get('hygiene') || null,
+          tags: get('tags') || null,
+          notes: get('notes') || null,
+          diet: get('diet') || null,
+          sleep: isNaN(getNum('sleep')) ? null : getNum('sleep'),
+          stress: parseInt(el('stress').value, 10),
+          cycle: get('cycle') || null,
+          createdAt: new Date().toISOString(),
+        };
+
+        logs.push(entry);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+        renderKPIs();
+        renderHistory();
+        updateGap();
+        alert('✅ Entry saved successfully!');
+        clearForm();
+      }
+
+      function clearForm() {
+        el('entryForm').reset();
+        el('pain').value = 1;
+        el('painOut').textContent = 1;
+        el('stress').value = 3;
+        el('stressOut').textContent = 3;
+        const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+        el('startAt').value = nowLocal;
+        el('endAt').value = '';
+        el('durationMin').value = '';
+        updateGap();
+      }
+
+      // KPIs
+      function calcKPIs() {
+        const total = logs.length;
+        const totalTime = logs.reduce((s, e) => s + (parseFloat(e.duration) || 0), 0);
+        const avg = total ? (totalTime / total) : 0;
+
+        const todayKey = new Date().toDateString();
+        const today = logs.filter(e => new Date(e.start || e.createdAt).toDateString() === todayKey).length;
+
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+        const week = logs.filter(e => new Date(e.start || e.createdAt) >= weekAgo).length;
+
+        // Consistency over last 7 days
+        let daysWith = 0;
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          const k = d.toDateString();
+          if (logs.some(e => new Date(e.start || e.createdAt).toDateString() === k)) daysWith++;
+        }
+        const consistency = Math.round((daysWith / 7) * 100);
+
+        // Gap since last
+        let gap = '–';
+        if (logs.length) {
+          const last = logs[logs.length - 1];
+          const lastTime = new Date(last.end || last.start || last.createdAt);
+          const hours = ((Date.now() - lastTime.getTime()) / 3600000).toFixed(1);
+          gap = hours + 'h';
+        }
+
+        return { total, avg, today, week, consistency, gap };
+      }
+
+      function renderKPIs() {
+        const k = calcKPIs();
+        el('kpiTotal').textContent = k.total;
+        el('kpiAvg').textContent = k.avg.toFixed(1);
+        el('kpiToday').textContent = k.today;
+        el('kpiWeek').textContent = k.week;
+        el('kpiConsistency').textContent = k.consistency + '%';
+        el('kpiGap').textContent = k.gap;
+      }
+
+      // History
+      function renderHistory() {
+        const container = el('history');
+        if (!logs.length) {
+          container.innerHTML = '<div class="text-center text-gray-500 py-12 text-lg">📭 No entries yet. Start tracking!</div>';
+          el('historyCount').textContent = '0 entries';
+          return;
+        }
+        el('historyCount').textContent = logs.length + (logs.length === 1 ? ' entry' : ' entries');
+
+        const items = [...logs].reverse().slice(0, 100).map((e) => {
+          const when = new Date(e.start || e.createdAt);
+          const dateStr = when.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+          const timeStr = when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          
+          const badges = [];
+          if (e.bristol) badges.push(`Type ${e.bristol}`);
+          if (e.color) badges.push(e.color);
+          if (e.volume) badges.push(e.volume);
+          if (e.hasBlood) badges.push('⚠️ Blood');
+          if (e.hasMucus) badges.push('Mucus');
+          if (e.floats) badges.push('Floats');
+          if (e.sinks) badges.push('Sinks');
+          
+          const symptomsStr = e.symptoms && e.symptoms.length ? e.symptoms.join(', ') : null;
+
+          return `
+            <div class="p-4 rounded-xl border-2 border-royal-200 hover:border-royal-400 transition bg-gradient-to-r from-white to-royal-50/30">
+              <div class="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                <div class="grow">
+                  <div class="font-bold text-lg text-royal-700">${dateStr} • ${timeStr}</div>
+                  <div class="text-sm text-slate-dark mt-1">
+                    ⏱️ ${(parseFloat(e.duration)||0).toFixed(1)} min
+                    ${e.shape ? ` • ${e.shape}` : ''}
+                    ${e.smell ? ` • Smell: ${e.smell}` : ''}
+                    ${e.pain ? ` • Pain: ${e.pain}/5` : ''}
+                  </div>
+                  ${symptomsStr ? `<div class="text-sm text-royal-600 mt-1">🤕 ${symptomsStr}</div>` : ''}
+                  ${e.notes ? `<div class="text-sm text-gray-700 mt-2 italic">📝 ${e.notes}</div>` : ''}
+                  ${e.tags ? `<div class="text-xs text-royal-600 mt-1"># ${e.tags}</div>` : ''}
+                  ${e.diet ? `<div class="text-xs text-slate mt-1">🍽️ ${e.diet}</div>` : ''}
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  ${badges.map(b => `<span class="px-3 py-1 rounded-full bg-royal-100 text-royal-800 text-xs font-semibold whitespace-nowrap">${b}</span>`).join('')}
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+
+        container.innerHTML = items;
+      }
+
+      function clearAll() {
+        if (!confirm('🗑️ Delete ALL entries? This action cannot be undone!')) return;
+        localStorage.removeItem(STORAGE_KEY);
+        logs.length = 0;
+        renderKPIs();
+        renderHistory();
+        updateGap();
+        alert('✅ All data has been deleted.');
+      }
+
+      function exportData() {
+        if (!logs.length) {
+          alert('📭 No data to export.');
+          return;
+        }
+        const json = JSON.stringify(logs, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `poop-tracker-export-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('✅ Data exported successfully!');
+      }
+
+      // Event listeners
+      el('btnStart').addEventListener('click', startTimer);
+      el('btnStop').addEventListener('click', stopTimer);
+      el('btnReset').addEventListener('click', resetTimer);
+      el('btnSave').addEventListener('click', saveEntry);
+      el('btnClearForm').addEventListener('click', clearForm);
+      el('btnClearAll').addEventListener('click', clearAll);
+      el('btnExport').addEventListener('click', exportData);
+      el('startAt').addEventListener('change', () => { recalcDuration(); updateGap(); });
+      el('endAt').addEventListener('change', recalcDuration);
+
+      // Initialize
+      (function init() {
+        const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+        el('startAt').value = nowLocal;
+        renderKPIs();
+        renderHistory();
+        updateGap();
+      })();
+    </script>
+  </body>
+</html>

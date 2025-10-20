@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>💩 Overall History - Poopy Adventure Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              royal: {
+                50: '#f0f5ff',
+                500: '#4169E1',
+                600: '#3259f3',
+                700: '#1944f1',
+                800: '#002BD8',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .safe-top { padding-top: max(16px, env(safe-area-inset-top)); }
+        .btn-press:active { transform: scale(0.96); }
+        .btn-press { transition: transform 0.1s ease; }
+        .card-hover:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen">
+
+    <!-- Fixed Mobile Header -->
+    <header class="sticky top-0 z-50 bg-royal-600 text-white shadow-lg safe-top">
+        <div class="px-4 py-4 flex items-center justify-between">
+            <a href="mobile-index.html" class="btn-press text-white">
+                <i class="fa-solid fa-arrow-left text-xl"></i>
+            </a>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-xl"></i>
+                <h1 class="text-lg font-bold">Overall History</h1>
+            </div>
+            <button onclick="toggleMenu()" class="btn-press text-white">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Side Menu -->
+    <div id="side-menu" class="fixed inset-0 bg-black/50 z-50 hidden" onclick="toggleMenu()">
+        <div class="absolute left-0 top-0 h-full w-80 bg-white shadow-2xl" onclick="event.stopPropagation()">
+            <div class="safe-top bg-royal-600 text-white p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">Menu</h2>
+                    <button onclick="toggleMenu()" class="btn-press">
+                        <i class="fa-solid fa-xmark text-2xl"></i>
+                    </button>
+                </div>
+                <div id="user-info" class="text-sm opacity-90">
+                    <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading...
+                </div>
+            </div>
+            
+            <nav class="p-4">
+                <a href="mobile-index.html" class="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold mb-2">
+                    <i class="fa-solid fa-home text-xl w-6"></i>
+                    <span>Home</span>
+                </a>
+                <a href="overall-history.html" class="flex items-center gap-3 p-4 rounded-xl bg-royal-50 text-royal-700 font-semibold mb-2">
+                    <i class="fa-solid fa-clock-rotate-left text-xl w-6"></i>
+                    <span>Overall History</span>
+                </a>
+                <a href="reports.html" class="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold mb-2">
+                    <i class="fa-solid fa-chart-line text-xl w-6"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="settings.html" class="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold mb-2">
+                    <i class="fa-solid fa-gear text-xl w-6"></i>
+                    <span>Settings</span>
+                </a>
+                <div class="border-t border-gray-200 my-4"></div>
+                <button id="auth-action-btn" onclick="handleAuthAction()" class="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold w-full">
+                    <i class="fa-solid fa-right-to-bracket text-xl w-6"></i>
+                    <span>Sign In</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="px-4 pt-4 pb-24">
+
+        <!-- Stats Summary -->
+        <div class="bg-white rounded-2xl p-5 shadow-md mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-xl font-bold text-royal-800">All Time Statistics</h2>
+                <span id="total-count-badge" class="bg-royal-100 text-royal-700 px-3 py-1 rounded-full text-xs font-bold">0 entries</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="text-center bg-gray-50 rounded-xl p-3">
+                    <div class="text-2xl font-bold text-royal-600" id="stat-total">0</div>
+                    <div class="text-xs text-gray-500 mt-1">Total</div>
+                </div>
+                <div class="text-center bg-gray-50 rounded-xl p-3">
+                    <div class="text-2xl font-bold text-emerald-600" id="stat-avg">0</div>
+                    <div class="text-xs text-gray-500 mt-1">Avg/Day</div>
+                </div>
+                <div class="text-center bg-gray-50 rounded-xl p-3">
+                    <div class="text-2xl font-bold text-amber-600" id="stat-days">0</div>
+                    <div class="text-xs text-gray-500 mt-1">Days</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Options -->
+        <div class="bg-white rounded-2xl p-4 shadow-md mb-4">
+            <div class="flex gap-2 overflow-x-auto">
+                <button onclick="filterBy('all')" id="filter-all" class="btn-press px-4 py-2 rounded-lg text-sm font-semibold bg-royal-600 text-white whitespace-nowrap">
+                    All Time
+                </button>
+                <button onclick="filterBy('today')" id="filter-today" class="btn-press px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 whitespace-nowrap">
+                    Today
+                </button>
+                <button onclick="filterBy('week')" id="filter-week" class="btn-press px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 whitespace-nowrap">
+                    This Week
+                </button>
+                <button onclick="filterBy('month')" id="filter-month" class="btn-press px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 whitespace-nowrap">
+                    This Month
+                </button>
+            </div>
+        </div>
+
+        <!-- History Container -->
+        <div class="bg-white rounded-2xl p-5 shadow-md">
+            <h2 class="text-lg font-bold text-royal-800 mb-4">
+                <i class="fa-solid fa-list mr-2"></i>All Entries
+            </h2>
+            <div id="history-container">
+                <div class="text-center py-12">
+                    <i class="fa-solid fa-spinner fa-spin text-4xl text-royal-600 mb-4"></i>
+                    <p class="text-gray-500">Loading entries...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let allLogs = [];
+        let currentFilter = 'all';
+
+        // Auth setup
+        async function setupAuth() {
+            const isAuth = await Auth.isAuthenticated();
+            const isGuest = localStorage.getItem('guestMode') === 'true';
+            const userInfoDiv = document.getElementById('user-info');
+            const authBtn = document.getElementById('auth-action-btn');
+
+            if (isAuth) {
+                const user = await Auth.getUser();
+                const profile = await Auth.getProfile();
+                
+                userInfoDiv.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-user text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">${profile?.full_name || user.email}</div>
+                            <div class="text-xs opacity-75">${user.email}</div>
+                        </div>
+                    </div>
+                `;
+                
+                authBtn.innerHTML = `
+                    <i class="fa-solid fa-right-from-bracket text-xl w-6"></i>
+                    <span>Sign Out</span>
+                `;
+            } else if (isGuest) {
+                userInfoDiv.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-user-ninja"></i>
+                        <span>Guest Mode</span>
+                    </div>
+                `;
+                
+                authBtn.innerHTML = `
+                    <i class="fa-solid fa-right-to-bracket text-xl w-6"></i>
+                    <span>Sign In</span>
+                `;
+            } else {
+                window.location.href = 'auth.html';
+            }
+        }
+
+        async function handleAuthAction() {
+            const isAuth = await Auth.isAuthenticated();
+            
+            if (isAuth) {
+                if (confirm('Are you sure you want to sign out?')) {
+                    await Auth.signOut();
+                }
+            } else {
+                window.location.href = 'auth.html';
+            }
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('side-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Get logs helper
+        async function getLogs() {
+            try {
+                const isAuth = await Auth.isAuthenticated();
+                
+                if (isAuth) {
+                    const entries = await PoopDB.getAllEntries();
+                    console.log('📊 Loaded', entries.length, 'entries from Supabase');
+                    return entries;
+                } else {
+                    const logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+                    console.log('📊 Loaded', logs.length, 'entries from localStorage');
+                    return logs;
+                }
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                return JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+            }
+        }
+
+        // Filter functions
+        function filterBy(period) {
+            currentFilter = period;
+            
+            // Update button styles
+            ['all', 'today', 'week', 'month'].forEach(p => {
+                const btn = document.getElementById('filter-' + p);
+                if (p === period) {
+                    btn.className = 'btn-press px-4 py-2 rounded-lg text-sm font-semibold bg-royal-600 text-white whitespace-nowrap';
+                } else {
+                    btn.className = 'btn-press px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 text-gray-700 whitespace-nowrap';
+                }
+            });
+            
+            renderHistory();
+        }
+
+        function getFilteredLogs() {
+            const now = new Date();
+            
+            switch(currentFilter) {
+                case 'today':
+                    const today = now.toDateString();
+                    return allLogs.filter(log => 
+                        new Date(log.timestamp).toDateString() === today
+                    );
+                    
+                case 'week':
+                    const weekAgo = new Date(now);
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return allLogs.filter(log => 
+                        new Date(log.timestamp) >= weekAgo
+                    );
+                    
+                case 'month':
+                    const monthAgo = new Date(now);
+                    monthAgo.setMonth(monthAgo.getMonth() - 1);
+                    return allLogs.filter(log => 
+                        new Date(log.timestamp) >= monthAgo
+                    );
+                    
+                default:
+                    return allLogs;
+            }
+        }
+
+        // Render history
+        async function renderHistory() {
+            const logs = getFilteredLogs();
+            const container = document.getElementById('history-container');
+            
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-6xl mb-4 opacity-20">📭</div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">No Entries Found</h3>
+                        <p class="text-gray-500 mb-6 px-4">No entries match the selected filter.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Helper functions for Bristol scale
+            const getBristolColor = (bristol) => {
+                const colors = {
+                    '1': 'border-l-red-500', '2': 'border-l-orange-500',
+                    '3': 'border-l-emerald-500', '4': 'border-l-emerald-500',
+                    '5': 'border-l-emerald-500', '6': 'border-l-amber-500',
+                    '7': 'border-l-red-500'
+                };
+                return colors[bristol] || 'border-l-gray-300';
+            };
+
+            const getBristolEmoji = (bristol) => {
+                const emojis = {
+                    '1': '🔴', '2': '🟠', '3': '🟢', '4': '🟢',
+                    '5': '🟢', '6': '🟡', '7': '🔴'
+                };
+                return emojis[bristol] || '⚪';
+            };
+
+            container.innerHTML = logs.map(log => `
+                <div class="bg-white p-4 rounded-2xl shadow-md border-l-4 ${getBristolColor(log.bristol)} card-hover relative overflow-hidden mb-3">
+                    <div class="absolute top-0 right-0 text-6xl opacity-5">
+                        ${getBristolEmoji(log.bristol)}
+                    </div>
+                    
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="text-sm font-bold text-gray-900">
+                                    ${new Date(log.timestamp).toLocaleDateString('en-US', { 
+                                        weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+                                    })}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    ${new Date(log.timestamp).toLocaleTimeString('en-US', { 
+                                        hour: 'numeric', minute: '2-digit', hour12: true 
+                                    })} • ${log.duration} min
+                                </div>
+                            </div>
+                            <button onclick="deleteEntry('${log.id}')" class="btn-press text-red-500 hover:bg-red-50 p-2 rounded-lg">
+                                <i class="fa-solid fa-trash text-sm"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold ${getBristolColor(log.bristol).replace('border-l', 'bg').replace('500', '100')} ${getBristolColor(log.bristol).replace('border-l', 'text').replace('500', '700')}">
+                                <i class="fa-solid fa-chart-simple mr-1"></i>Type ${log.bristol}
+                            </span>
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700">
+                                🎨 ${log.color}
+                            </span>
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700">
+                                📏 ${log.volume}
+                            </span>
+                            ${log.pain > 0 ? `<span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-700">⚡ Pain: ${log.pain}/10</span>` : ''}
+                        </div>
+                        
+                        ${log.hasBlood || log.hasMucus ? `
+                        <div class="bg-red-50 border border-red-200 rounded-xl p-2 mb-2">
+                            ${log.hasBlood ? '<div class="text-red-700 font-semibold text-xs">🩸 Blood detected</div>' : ''}
+                            ${log.hasMucus ? '<div class="text-amber-700 font-semibold text-xs">💧 Mucus present</div>' : ''}
+                        </div>
+                        ` : ''}
+                        
+                        ${log.notes ? `
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-2 mt-2">
+                            <div class="text-xs text-blue-800">${log.notes}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Delete entry
+        async function deleteEntry(id) {
+            if (!confirm('Delete this entry?')) return;
+            
+            try {
+                const isAuth = await Auth.isAuthenticated();
+                
+                if (isAuth) {
+                    await PoopDB.deleteEntry(id);
+                } else {
+                    let logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+                    logs = logs.filter(log => log.id !== id);
+                    localStorage.setItem('poopLogsProV2', JSON.stringify(logs));
+                }
+                
+                await loadData();
+            } catch (error) {
+                console.error('Error deleting entry:', error);
+                alert('Error deleting entry: ' + error.message);
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            const logs = allLogs;
+            
+            document.getElementById('stat-total').textContent = logs.length;
+            document.getElementById('total-count-badge').textContent = logs.length === 1 ? '1 entry' : `${logs.length} entries`;
+            
+            if (logs.length > 0) {
+                const firstLog = new Date(logs[logs.length - 1].timestamp);
+                const daysSince = Math.max(1, Math.ceil((Date.now() - firstLog) / (1000 * 60 * 60 * 24)));
+                const avg = (logs.length / daysSince).toFixed(1);
+                document.getElementById('stat-avg').textContent = avg;
+                document.getElementById('stat-days').textContent = daysSince;
+            }
+        }
+
+        // Load data
+        async function loadData() {
+            allLogs = await getLogs();
+            updateStats();
+            renderHistory();
+        }
+
+        // Initialize
+        async function init() {
+            await setupAuth();
+            await loadData();
+        }
+
+        init();
+    </script>
+</body>
+</html>

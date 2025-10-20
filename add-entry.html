@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#4169E1">
+    <title>Add Entry - Poopy Adventure Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              royal: {
+                50: '#f0f5ff',
+                100: '#e0ebff',
+                200: '#c7d7fe',
+                300: '#a4bcfd',
+                400: '#8a9ff5',
+                500: '#4169E1',
+                600: '#3259f3',
+                700: '#1944f1',
+                800: '#002BD8',
+                900: '#001a8a'
+              },
+              champagne: {
+                50: '#fdfbf7',
+                100: '#F7E7CE',
+                200: '#f0d9b5',
+                300: '#e8ca9d'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+            overflow-x: hidden;
+        }
+        
+        .safe-top {
+            padding-top: max(16px, env(safe-area-inset-top));
+        }
+        
+        .safe-bottom {
+            padding-bottom: max(80px, env(safe-area-inset-bottom));
+        }
+        
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .btn-press:active {
+            transform: scale(0.96);
+        }
+        
+        .btn-press {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+        }
+
+        /* Radio button styling */
+        input[type="radio"]:checked + label {
+            background: linear-gradient(135deg, #4169E1, #002BD8);
+            color: white;
+            border-color: #4169E1;
+        }
+
+        /* Progress indicator */
+        .progress-step {
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active {
+            background: #4169E1;
+            color: white;
+        }
+
+        .progress-step.completed {
+            background: #10b981;
+            color: white;
+        }
+
+        /* Smooth section transitions */
+        .section-enter {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Color picker */
+        .color-option {
+            transition: all 0.2s ease;
+            border: 3px solid transparent;
+        }
+
+        .color-option.selected {
+            border-color: #4169E1;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(65, 105, 225, 0.3);
+        }
+
+        /* Symptom chips */
+        .symptom-chip {
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .symptom-chip:active {
+            transform: scale(0.95);
+        }
+
+        /* Custom Range Slider Styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        /* Track */
+        input[type="range"]::-webkit-slider-track {
+            background: #e5e7eb;
+            height: 12px;
+            border-radius: 6px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            background: #e5e7eb;
+            height: 12px;
+            border-radius: 6px;
+        }
+
+        /* Thumb */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #4169E1;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            margin-top: -6px;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid #4169E1;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Pain slider specific */
+        #pain::-webkit-slider-thumb {
+            border-color: #ef4444;
+        }
+
+        #pain::-moz-range-thumb {
+            border-color: #ef4444;
+        }
+
+        /* Duration slider specific */
+        #duration::-webkit-slider-thumb {
+            border-color: #4169E1;
+        }
+
+        #duration::-moz-range-thumb {
+            border-color: #4169E1;
+        }
+
+        /* Filled track effect using background gradient */
+        input[type="range"] {
+            background: linear-gradient(to right, #4169E1 0%, #4169E1 0%, #e5e7eb 0%, #e5e7eb 100%);
+            height: 12px;
+            border-radius: 6px;
+        }
+
+        #pain {
+            background: linear-gradient(to right, #ef4444 0%, #ef4444 0%, #e5e7eb 0%, #e5e7eb 100%);
+        }
+
+        /* Fixed bottom bar */
+        .fixed-bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 40;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen">
+
+    <!-- Fixed Mobile Header -->
+    <header class="sticky top-0 z-50 bg-royal-600 text-white shadow-lg safe-top">
+        <div class="px-4 py-4 flex items-center justify-between">
+            <a href="mobile-index.html" class="btn-press text-white">
+                <i class="fa-solid fa-arrow-left text-xl"></i>
+            </a>
+            <h1 class="text-xl font-bold">New Entry</h1>
+            <button onclick="clearForm()" class="btn-press text-white">
+                <i class="fa-solid fa-rotate-right text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Progress Indicator -->
+    <div class="bg-white shadow-sm px-4 py-3 flex justify-between gap-2">
+        <div class="progress-step active flex-1 text-center py-2 rounded-lg text-xs font-bold">
+            <i class="fa-solid fa-clock mr-1"></i>When
+        </div>
+        <div class="progress-step flex-1 text-center py-2 rounded-lg text-xs font-bold bg-gray-100 text-gray-500">
+            <i class="fa-solid fa-droplet mr-1"></i>Type
+        </div>
+        <div class="progress-step flex-1 text-center py-2 rounded-lg text-xs font-bold bg-gray-100 text-gray-500">
+            <i class="fa-solid fa-heart-pulse mr-1"></i>Health
+        </div>
+        <div class="progress-step flex-1 text-center py-2 rounded-lg text-xs font-bold bg-gray-100 text-gray-500">
+            <i class="fa-solid fa-notes-medical mr-1"></i>Notes
+        </div>
+    </div>
+
+    <!-- Main Form Content -->
+    <form id="entry-form" class="px-4 pt-4 pb-32 safe-bottom">
+        
+        <!-- Section 1: Timing -->
+        <div id="section-1" class="section-enter">
+            <div class="bg-white rounded-2xl p-6 shadow-lg mb-4">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 bg-royal-100 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-clock text-royal-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">When did it happen?</h2>
+                        <p class="text-sm text-gray-500">Select date and time</p>
+                    </div>
+                </div>
+
+                <!-- Date & Time -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-calendar text-royal-600"></i>
+                            Date
+                        </label>
+                        <input type="date" name="date" id="entry-date" required 
+                               class="w-full p-4 border-2 border-gray-200 rounded-xl text-base focus:border-royal-500 bg-gray-50">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-clock text-royal-600"></i>
+                            Time
+                        </label>
+                        <input type="time" name="time" id="entry-time" required 
+                               class="w-full p-4 border-2 border-gray-200 rounded-xl text-base focus:border-royal-500 bg-gray-50">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-hourglass-half text-royal-600"></i>
+                            Duration (minutes): <span id="duration-value" class="text-royal-600">5</span>
+                        </label>
+                        <input type="range" name="duration" id="duration" min="1" max="60" value="5" 
+                               oninput="updateDurationDisplay(this.value); updateSliderFill('duration', this.value, 1, 60)">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>1 min</span>
+                            <span>60 min</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Stool Characteristics -->
+        <div id="section-2" class="hidden">
+            <div class="bg-white rounded-2xl p-6 shadow-lg mb-4">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-droplet text-amber-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Stool Type</h2>
+                        <p class="text-sm text-gray-500">Bristol Stool Scale</p>
+                    </div>
+                </div>
+
+                <!-- Bristol Scale -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Bristol Scale Type</label>
+                    <div class="grid grid-cols-4 gap-2 mb-3">
+                        <div>
+                            <input type="radio" name="bristol" value="1" id="bristol-1" class="hidden" required onchange="selectBristol(1)">
+                            <label for="bristol-1" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl font-bold text-royal-600">1</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="bristol" value="2" id="bristol-2" class="hidden" required onchange="selectBristol(2)">
+                            <label for="bristol-2" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl font-bold text-royal-600">2</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="bristol" value="3" id="bristol-3" class="hidden" required onchange="selectBristol(3)">
+                            <label for="bristol-3" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl font-bold text-royal-600">3</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="bristol" value="4" id="bristol-4" class="hidden" required onchange="selectBristol(4)">
+                            <label for="bristol-4" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl font-bold text-royal-600">4</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="bristol" value="5" id="bristol-5" class="hidden" required onchange="selectBristol(5)">
+                            <label for="bristol-5" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl font-bold text-royal-600">5</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="bristol" value="6" id="bristol-6" class="hidden" required onchange="selectBristol(6)">
+                            <label for="bristol-6" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl font-bold text-royal-600">6</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="bristol" value="7" id="bristol-7" class="hidden" required onchange="selectBristol(7)">
+                            <label for="bristol-7" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl font-bold text-royal-600">7</div>
+                            </label>
+                        </div>
+                        <div class="col-span-1">
+                            <button type="button" onclick="showBristolInfo()" class="w-full h-full border-2 border-royal-300 rounded-xl text-royal-600 hover:bg-royal-50">
+                                <i class="fa-solid fa-circle-info text-2xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="bristol-description" class="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-800 hidden"></div>
+                </div>
+
+                <!-- Color -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Color</label>
+                    <div class="grid grid-cols-4 gap-3">
+                        <div class="color-option rounded-xl cursor-pointer p-3 text-center" style="background-color: #8B4513; color: white" onclick="selectColor('Brown', this)">
+                            <div class="font-semibold text-xs">Brown</div>
+                        </div>
+                        <div class="color-option rounded-xl cursor-pointer p-3 text-center" style="background-color: #654321; color: white" onclick="selectColor('Dark Brown', this)">
+                            <div class="font-semibold text-xs">Dark Brown</div>
+                        </div>
+                        <div class="color-option rounded-xl cursor-pointer p-3 text-center" style="background-color: #C4A57B" onclick="selectColor('Light Brown', this)">
+                            <div class="font-semibold text-xs">Light Brown</div>
+                        </div>
+                        <div class="color-option rounded-xl cursor-pointer p-3 text-center" style="background-color: #FFD700" onclick="selectColor('Yellow', this)">
+                            <div class="font-semibold text-xs">Yellow</div>
+                        </div>
+                        <div class="color-option rounded-xl cursor-pointer p-3 text-center" style="background-color: #228B22; color: white" onclick="selectColor('Green', this)">
+                            <div class="font-semibold text-xs">Green</div>
+                        </div>
+                        <div class="color-option rounded-xl cursor-pointer p-3 text-center" style="background-color: #000000; color: white" onclick="selectColor('Black', this)">
+                            <div class="font-semibold text-xs">Black</div>
+                        </div>
+                        <div class="color-option rounded-xl cursor-pointer p-3 text-center" style="background-color: #DC143C; color: white" onclick="selectColor('Red', this)">
+                            <div class="font-semibold text-xs">Red</div>
+                        </div>
+                        <div class="color-option rounded-xl cursor-pointer p-3 text-center" style="background-color: #F5DEB3" onclick="selectColor('Pale', this)">
+                            <div class="font-semibold text-xs">Pale</div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="color" id="color-value" required>
+                </div>
+
+                <!-- Volume -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Volume</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <input type="radio" name="volume" value="Small" id="volume-small" class="hidden" required>
+                            <label for="volume-small" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <i class="fa-solid fa-circle text-royal-600 mb-2"></i>
+                                <div class="font-semibold">Small</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="volume" value="Medium" id="volume-medium" class="hidden" required>
+                            <label for="volume-medium" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <i class="fa-solid fa-circle text-xl text-royal-600 mb-2"></i>
+                                <div class="font-semibold">Medium</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="volume" value="Large" id="volume-large" class="hidden" required>
+                            <label for="volume-large" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <i class="fa-solid fa-circle text-2xl text-royal-600 mb-2"></i>
+                                <div class="font-semibold">Large</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shape -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Shape</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <input type="radio" name="shape" value="Log" id="shape-log" class="hidden">
+                            <label for="shape-log" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <i class="fa-solid fa-minus text-royal-600 text-xl mb-2"></i>
+                                <div class="font-semibold text-sm">Log</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="shape" value="Pellets" id="shape-pellets" class="hidden">
+                            <label for="shape-pellets" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <i class="fa-solid fa-braille text-royal-600 text-xl mb-2"></i>
+                                <div class="font-semibold text-sm">Pellets</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="shape" value="Chunks" id="shape-chunks" class="hidden">
+                            <label for="shape-chunks" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <i class="fa-solid fa-cubes text-royal-600 text-xl mb-2"></i>
+                                <div class="font-semibold text-sm">Chunks</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="shape" value="Soft" id="shape-soft" class="hidden">
+                            <label for="shape-soft" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <i class="fa-solid fa-cloud text-royal-600 text-xl mb-2"></i>
+                                <div class="font-semibold text-sm">Soft</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="shape" value="Liquid" id="shape-liquid" class="hidden">
+                            <label for="shape-liquid" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <i class="fa-solid fa-droplet text-royal-600 text-xl mb-2"></i>
+                                <div class="font-semibold text-sm">Liquid</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Smell -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Smell Intensity</label>
+                    <div class="grid grid-cols-5 gap-2">
+                        <div>
+                            <input type="radio" name="smell" value="None" id="smell-0" class="hidden">
+                            <label for="smell-0" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl mb-1">😊</div>
+                                <div class="text-xs font-semibold text-gray-600">None</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="smell" value="Mild" id="smell-1" class="hidden">
+                            <label for="smell-1" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl mb-1">🙂</div>
+                                <div class="text-xs font-semibold text-gray-600">Mild</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="smell" value="Normal" id="smell-2" class="hidden">
+                            <label for="smell-2" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl mb-1">😐</div>
+                                <div class="text-xs font-semibold text-gray-600">Normal</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="smell" value="Strong" id="smell-3" class="hidden">
+                            <label for="smell-3" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl mb-1">😷</div>
+                                <div class="text-xs font-semibold text-gray-600">Strong</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="radio" name="smell" value="Very Strong" id="smell-4" class="hidden">
+                            <label for="smell-4" class="block text-center p-3 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                <div class="text-2xl mb-1">🤢</div>
+                                <div class="text-xs font-semibold text-gray-600">Very Strong</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Health Indicators -->
+        <div id="section-3" class="hidden">
+            <div class="bg-white rounded-2xl p-6 shadow-lg mb-4">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-heart-pulse text-red-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Health Indicators</h2>
+                        <p class="text-sm text-gray-500">Pain and warnings</p>
+                    </div>
+                </div>
+
+                <!-- Pain Level -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">
+                        Pain Level: <span id="pain-value" class="text-red-600">0</span>/10
+                    </label>
+                    <input type="range" name="pain" id="pain" min="0" max="10" value="0" 
+                           oninput="updatePainDisplay(this.value); updateSliderFill('pain', this.value, 0, 10)">
+                    <div class="flex justify-between text-xs text-gray-500 mt-2">
+                        <span>😊 No pain</span>
+                        <span>😖 Severe</span>
+                    </div>
+                </div>
+
+                <!-- Medical Warnings -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Medical Indicators</label>
+                    <div class="space-y-3">
+                        <label class="flex items-center justify-between p-4 bg-red-50 border-2 border-red-200 rounded-xl cursor-pointer hover:bg-red-100">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-droplet text-red-600 text-xl"></i>
+                                <span class="font-semibold text-gray-800">Blood present</span>
+                            </div>
+                            <input type="checkbox" name="blood" class="w-6 h-6 text-red-600 rounded accent-red-600">
+                        </label>
+                        <label class="flex items-center justify-between p-4 bg-amber-50 border-2 border-amber-200 rounded-xl cursor-pointer hover:bg-amber-100">
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-droplet text-amber-600 text-xl"></i>
+                                <span class="font-semibold text-gray-800">Mucus present</span>
+                            </div>
+                            <input type="checkbox" name="mucus" class="w-6 h-6 text-amber-600 rounded accent-amber-600">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Symptoms -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Symptoms (Optional)</label>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 text-sm font-medium transition-all">
+                            <input type="checkbox" name="symptoms" value="Cramping" class="hidden">
+                            <span>Cramping</span>
+                        </label>
+                        <label class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 text-sm font-medium transition-all">
+                            <input type="checkbox" name="symptoms" value="Bloating" class="hidden">
+                            <span>Bloating</span>
+                        </label>
+                        <label class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 text-sm font-medium transition-all">
+                            <input type="checkbox" name="symptoms" value="Nausea" class="hidden">
+                            <span>Nausea</span>
+                        </label>
+                        <label class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 text-sm font-medium transition-all">
+                            <input type="checkbox" name="symptoms" value="Gas" class="hidden">
+                            <span>Gas</span>
+                        </label>
+                        <label class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 text-sm font-medium transition-all">
+                            <input type="checkbox" name="symptoms" value="Urgent" class="hidden">
+                            <span>Urgent</span>
+                        </label>
+                        <label class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 text-sm font-medium transition-all">
+                            <input type="checkbox" name="symptoms" value="Incomplete" class="hidden">
+                            <span>Incomplete</span>
+                        </label>
+                        <label class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 text-sm font-medium transition-all">
+                            <input type="checkbox" name="symptoms" value="Straining" class="hidden">
+                            <span>Straining</span>
+                        </label>
+                        <label class="symptom-chip px-4 py-2 border-2 border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 text-sm font-medium transition-all">
+                            <input type="checkbox" name="symptoms" value="Fatigue" class="hidden">
+                            <span>Fatigue</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Notes -->
+        <div id="section-4" class="hidden">
+            <div class="bg-white rounded-2xl p-6 shadow-lg mb-4">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-notes-medical text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Additional Notes</h2>
+                        <p class="text-sm text-gray-500">Optional information</p>
+                    </div>
+                </div>
+
+                <textarea name="notes" rows="6" placeholder="Any additional details, triggers, or observations..." 
+                          class="w-full p-4 border-2 border-gray-200 rounded-xl resize-none focus:border-royal-500 text-base"></textarea>
+                
+                <div class="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-lightbulb text-blue-600 text-xl mt-0.5"></i>
+                        <div class="text-sm text-blue-800">
+                            <div class="font-bold mb-1">💡 Helpful to track:</div>
+                            <ul class="space-y-1 ml-4 list-disc">
+                                <li>What you ate in the last 24 hours</li>
+                                <li>Stress levels or emotional state</li>
+                                <li>Medications or supplements taken</li>
+                                <li>Sleep quality last night</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Card -->
+            <div class="bg-gradient-to-r from-royal-500 to-royal-700 rounded-2xl p-6 shadow-xl text-white mb-4">
+                <div class="flex items-center gap-3 mb-4">
+                    <i class="fa-solid fa-circle-check text-3xl"></i>
+                    <div>
+                        <h3 class="text-xl font-bold">Ready to Save!</h3>
+                        <p class="text-sm opacity-90">Review your entry below</p>
+                    </div>
+                </div>
+                <div id="entry-summary" class="space-y-2 text-sm bg-white/10 rounded-xl p-4 backdrop-blur">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+    </form>
+
+    <!-- Fixed Bottom Navigation -->
+    <div class="fixed-bottom-bar safe-bottom">
+        <div class="px-4 py-4 flex gap-3">
+            <button type="button" id="back-btn" onclick="previousSection()" 
+                    class="btn-press flex-1 bg-gray-200 text-gray-700 py-4 rounded-xl font-bold text-lg hidden">
+                <i class="fa-solid fa-arrow-left mr-2"></i>Back
+            </button>
+            <button type="button" id="next-btn" onclick="nextSection()" 
+                    class="btn-press flex-1 bg-royal-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg">
+                Next<i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+            <button type="button" id="save-btn" onclick="saveEntry()" 
+                    class="btn-press flex-1 bg-gradient-to-r from-green-600 to-green-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg hidden">
+                <i class="fa-solid fa-floppy-disk mr-2"></i>Save Entry
+            </button>
+        </div>
+    </div>
+
+    <!-- Bristol Scale Info Modal -->
+    <div id="bristol-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4" onclick="hideBristolInfo()">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Bristol Stool Scale</h3>
+                <button onclick="hideBristolInfo()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="p-3 bg-gray-50 rounded-xl">
+                    <div class="font-bold text-gray-800 mb-1">Type 1: Separate hard lumps</div>
+                    <p class="text-gray-600">Like nuts, hard to pass (severe constipation)</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-xl">
+                    <div class="font-bold text-gray-800 mb-1">Type 2: Sausage-shaped but lumpy</div>
+                    <p class="text-gray-600">Mild constipation</p>
+                </div>
+                <div class="p-3 bg-green-50 rounded-xl border border-green-200">
+                    <div class="font-bold text-green-800 mb-1">Type 3: Like a sausage with cracks</div>
+                    <p class="text-green-700">✅ Normal</p>
+                </div>
+                <div class="p-3 bg-green-50 rounded-xl border border-green-200">
+                    <div class="font-bold text-green-800 mb-1">Type 4: Smooth and soft</div>
+                    <p class="text-green-700">✅ Ideal - Normal</p>
+                </div>
+                <div class="p-3 bg-green-50 rounded-xl border border-green-200">
+                    <div class="font-bold text-green-800 mb-1">Type 5: Soft blobs with clear edges</div>
+                    <p class="text-green-700">✅ Normal - Lacks fiber</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-xl">
+                    <div class="font-bold text-gray-800 mb-1">Type 6: Fluffy pieces, mushy</div>
+                    <p class="text-gray-600">Mild diarrhea</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-xl">
+                    <div class="font-bold text-gray-800 mb-1">Type 7: Watery, no solid pieces</div>
+                    <p class="text-gray-600">Severe diarrhea</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSection = 1;
+        const totalSections = 4;
+
+        // Initialize
+        setCurrentDateTime();
+        updateSliderFill('duration', 5, 1, 60);
+        updateSliderFill('pain', 0, 0, 10);
+
+        function setCurrentDateTime() {
+            const now = new Date();
+            document.getElementById('entry-date').valueAsDate = now;
+            document.getElementById('entry-time').value = now.toTimeString().slice(0, 5);
+        }
+
+        function updateDurationDisplay(value) {
+            document.getElementById('duration-value').textContent = value;
+        }
+
+        function updatePainDisplay(value) {
+            document.getElementById('pain-value').textContent = value;
+        }
+
+        function updateSliderFill(sliderId, value, min, max) {
+            const slider = document.getElementById(sliderId);
+            const percentage = ((value - min) / (max - min)) * 100;
+            
+            if (sliderId === 'pain') {
+                slider.style.background = `linear-gradient(to right, #ef4444 0%, #ef4444 ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`;
+            } else if (sliderId === 'duration') {
+                slider.style.background = `linear-gradient(to right, #4169E1 0%, #4169E1 ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`;
+            }
+        }
+
+        function selectBristol(type) {
+            const descriptions = {
+                1: '🔴 Type 1: Separate hard lumps (Severe constipation)',
+                2: '🟠 Type 2: Lumpy and sausage-like (Mild constipation)',
+                3: '🟢 Type 3: Sausage with cracks on surface (Normal)',
+                4: '🟢 Type 4: Smooth and soft (Ideal)',
+                5: '🟢 Type 5: Soft blobs with clear edges (Normal)',
+                6: '🟡 Type 6: Fluffy pieces, mushy (Mild diarrhea)',
+                7: '🔴 Type 7: Watery, no solid pieces (Severe diarrhea)'
+            };
+            const descEl = document.getElementById('bristol-description');
+            descEl.innerHTML = descriptions[type];
+            descEl.classList.remove('hidden');
+        }
+
+        function selectColor(colorName, element) {
+            // Remove selected from all
+            document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+            // Add to clicked
+            element.classList.add('selected');
+            document.getElementById('color-value').value = colorName;
+        }
+
+        function showBristolInfo() {
+            document.getElementById('bristol-modal').classList.remove('hidden');
+        }
+
+        function hideBristolInfo() {
+            document.getElementById('bristol-modal').classList.add('hidden');
+        }
+
+        function nextSection() {
+            // Validate current section
+            if (currentSection === 1) {
+                const date = document.getElementById('entry-date').value;
+                const time = document.getElementById('entry-time').value;
+                if (!date || !time) {
+                    alert('Please fill in date and time');
+                    return;
+                }
+            } else if (currentSection === 2) {
+                const bristol = document.querySelector('input[name="bristol"]:checked');
+                const color = document.getElementById('color-value').value;
+                const volume = document.querySelector('input[name="volume"]:checked');
+                if (!bristol || !color || !volume) {
+                    alert('Please select Bristol type, color, and volume');
+                    return;
+                }
+            }
+
+            if (currentSection < totalSections) {
+                // Hide current
+                document.getElementById(`section-${currentSection}`).classList.add('hidden');
+                
+                // Show next
+                currentSection++;
+                document.getElementById(`section-${currentSection}`).classList.remove('hidden');
+                document.getElementById(`section-${currentSection}`).classList.add('section-enter');
+                
+                // Update progress
+                updateProgress();
+                
+                // Update buttons
+                updateButtons();
+                
+                // Scroll to top
+                window.scrollTo(0, 0);
+
+                // Update summary on last section
+                if (currentSection === totalSections) {
+                    updateSummary();
+                }
+            }
+        }
+
+        function previousSection() {
+            if (currentSection > 1) {
+                document.getElementById(`section-${currentSection}`).classList.add('hidden');
+                currentSection--;
+                document.getElementById(`section-${currentSection}`).classList.remove('hidden');
+                
+                updateProgress();
+                updateButtons();
+                window.scrollTo(0, 0);
+            }
+        }
+
+        function updateProgress() {
+            const steps = document.querySelectorAll('.progress-step');
+            steps.forEach((step, index) => {
+                if (index < currentSection - 1) {
+                    step.classList.add('completed');
+                    step.classList.remove('active');
+                } else if (index === currentSection - 1) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active', 'completed');
+                }
+            });
+        }
+
+        function updateButtons() {
+            const backBtn = document.getElementById('back-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const saveBtn = document.getElementById('save-btn');
+
+            if (currentSection === 1) {
+                backBtn.classList.add('hidden');
+            } else {
+                backBtn.classList.remove('hidden');
+            }
+
+            if (currentSection === totalSections) {
+                nextBtn.classList.add('hidden');
+                saveBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                saveBtn.classList.add('hidden');
+            }
+        }
+
+        function updateSummary() {
+            const formData = new FormData(document.getElementById('entry-form'));
+            const bristol = formData.get('bristol');
+            const color = formData.get('color');
+            const volume = formData.get('volume');
+            const shape = formData.get('shape');
+            const smell = formData.get('smell');
+            const pain = formData.get('pain');
+            const blood = formData.get('blood') ? 'Yes' : 'No';
+            const mucus = formData.get('mucus') ? 'Yes' : 'No';
+            const symptoms = formData.getAll('symptoms');
+            const date = formData.get('date');
+            const time = formData.get('time');
+            const duration = formData.get('duration');
+
+            const summary = `
+                <div class="grid grid-cols-2 gap-2">
+                    <div><strong>Date:</strong> ${date}</div>
+                    <div><strong>Time:</strong> ${time}</div>
+                    <div><strong>Duration:</strong> ${duration} min</div>
+                    <div><strong>Bristol:</strong> Type ${bristol}</div>
+                    <div><strong>Color:</strong> ${color}</div>
+                    <div><strong>Volume:</strong> ${volume}</div>
+                    ${shape ? `<div><strong>Shape:</strong> ${shape}</div>` : ''}
+                    ${smell ? `<div><strong>Smell:</strong> ${smell}</div>` : ''}
+                    <div><strong>Pain:</strong> ${pain}/10</div>
+                    <div><strong>Blood:</strong> ${blood}</div>
+                    <div><strong>Mucus:</strong> ${mucus}</div>
+                    ${symptoms.length > 0 ? `<div class="col-span-2"><strong>Symptoms:</strong> ${symptoms.join(', ')}</div>` : ''}
+                </div>
+            `;
+            document.getElementById('entry-summary').innerHTML = summary;
+        }
+
+        async function saveEntry() {
+            // Show loading
+            const saveBtn = document.getElementById('save-btn');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Saving...';
+            saveBtn.disabled = true;
+
+            try {
+                const formData = new FormData(document.getElementById('entry-form'));
+                
+                const entry = {
+                    id: Date.now().toString(),
+                    timestamp: new Date(formData.get('date') + 'T' + formData.get('time')).toISOString(),
+                    duration: parseInt(formData.get('duration')),
+                    bristol: formData.get('bristol'),
+                    color: formData.get('color'),
+                    volume: formData.get('volume').toLowerCase(),
+                    shape: formData.get('shape') || '',
+                    smell: formData.get('smell') || '',
+                    pain: parseInt(formData.get('pain')),
+                    hasBlood: formData.get('blood') === 'on',
+                    hasMucus: formData.get('mucus') === 'on',
+                    symptoms: formData.getAll('symptoms'),
+                    notes: formData.get('notes') || ''
+                };
+
+                // Check if user is authenticated
+                const isAuth = await Auth.isAuthenticated();
+                
+                if (isAuth) {
+                    // Save to Supabase database
+                    await PoopDB.createEntry(entry);
+                    console.log('✅ Saved to Supabase database');
+                } else {
+                    // Fallback to localStorage for guest mode
+                    let logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+                    logs.unshift(entry);
+                    localStorage.setItem('poopLogsProV2', JSON.stringify(logs));
+                    console.log('✅ Saved to localStorage (guest mode)');
+                }
+
+                // Show success and redirect
+                showSuccessToast('Entry saved successfully!');
+                setTimeout(() => {
+                    window.location.href = 'mobile-index.html';
+                }, 1000);
+
+            } catch (error) {
+                console.error('Error saving entry:', error);
+                
+                // Fallback to localStorage on error
+                const formData = new FormData(document.getElementById('entry-form'));
+                const entry = {
+                    id: Date.now().toString(),
+                    timestamp: new Date(formData.get('date') + 'T' + formData.get('time')).toISOString(),
+                    duration: parseInt(formData.get('duration')),
+                    bristol: formData.get('bristol'),
+                    color: formData.get('color'),
+                    volume: formData.get('volume').toLowerCase(),
+                    shape: formData.get('shape') || '',
+                    smell: formData.get('smell') || '',
+                    pain: parseInt(formData.get('pain')),
+                    hasBlood: formData.get('blood') === 'on',
+                    hasMucus: formData.get('mucus') === 'on',
+                    symptoms: formData.getAll('symptoms'),
+                    notes: formData.get('notes') || ''
+                };
+                
+                let logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+                logs.unshift(entry);
+                localStorage.setItem('poopLogsProV2', JSON.stringify(logs));
+                
+                alert('⚠️ Saved locally. Error: ' + error.message);
+                window.location.href = 'mobile-index.html';
+            } finally {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            }
+        }
+
+        function showSuccessToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3';
+            toast.innerHTML = `
+                <i class="fa-solid fa-circle-check text-2xl"></i>
+                <span class="font-semibold">${message}</span>
+            `;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        function clearForm() {
+            if (confirm('Clear all fields and start over?')) {
+                document.getElementById('entry-form').reset();
+                currentSection = 1;
+                document.querySelectorAll('[id^="section-"]').forEach(section => {
+                    section.classList.add('hidden');
+                });
+                document.getElementById('section-1').classList.remove('hidden');
+                updateProgress();
+                updateButtons();
+                setCurrentDateTime();
+                window.scrollTo(0, 0);
+            }
+        }
+
+        // Symptom chip selection
+        document.querySelectorAll('.symptom-chip').forEach(chip => {
+            chip.addEventListener('click', function(e) {
+                const checkbox = this.querySelector('input[type="checkbox"]');
+                
+                // Toggle checkbox state
+                checkbox.checked = !checkbox.checked;
+                
+                // Toggle visual appearance
+                if (checkbox.checked) {
+                    this.classList.add('bg-royal-600', 'text-white', 'border-royal-600');
+                    this.classList.remove('border-gray-200', 'hover:bg-gray-50');
+                } else {
+                    this.classList.remove('bg-royal-600', 'text-white', 'border-royal-600');
+                    this.classList.add('border-gray-200', 'hover:bg-gray-50');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

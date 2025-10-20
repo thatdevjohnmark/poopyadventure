@@ -1,0 +1,61 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Connection Test</title>
+    <script src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'></script>
+</head>
+<body>
+    <h1>Testing Supabase Connection...</h1>
+    <div id='result'></div>
+    
+    <script src='supabase-config.js'></script>
+    <script>
+        const resultDiv = document.getElementById('result');
+        
+        async function testConnection() {
+            try {
+                resultDiv.innerHTML = '<p> Testing connection...</p>';
+                
+                // Test 1: Check if client is initialized
+                if (!supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
+                resultDiv.innerHTML += '<p> Client initialized</p>';
+                
+                // Test 2: Test authentication
+                const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+                if (sessionError) throw sessionError;
+                resultDiv.innerHTML += '<p> Auth connection working</p>';
+                resultDiv.innerHTML += '<p>Session: ' + (session ? 'Logged in as ' + session.user.email : 'Not logged in') + '</p>';
+                
+                // Test 3: Test database connection (will fail with RLS if not logged in, which is expected)
+                const { data, error } = await supabaseClient
+                    .from('poop_entries')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    if (error.code === 'PGRST301' || error.message.includes('row-level security')) {
+                        resultDiv.innerHTML += '<p> Database connected (RLS active - need to sign in to access data)</p>';
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    resultDiv.innerHTML += '<p> Database connected and accessible</p>';
+                    resultDiv.innerHTML += '<p>Data: ' + JSON.stringify(data) + '</p>';
+                }
+                
+                resultDiv.innerHTML += '<h2 style="color: green;"> Connection Successful!</h2>';
+                resultDiv.innerHTML += '<p>Supabase URL: ' + SUPABASE_URL + '</p>';
+                
+            } catch (error) {
+                resultDiv.innerHTML += '<h2 style="color: red;"> Connection Failed</h2>';
+                resultDiv.innerHTML += '<p>Error: ' + error.message + '</p>';
+                console.error('Connection test failed:', error);
+            }
+        }
+        
+        testConnection();
+    </script>
+</body>
+</html>

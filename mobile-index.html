@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#4169E1">
+    <title>💩 Poopy Adventure Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              royal: {
+                50: '#f0f5ff',
+                100: '#e0ebff',
+                200: '#c7d7fe',
+                300: '#a4bcfd',
+                400: '#8a9ff5',
+                500: '#4169E1',
+                600: '#3259f3',
+                700: '#1944f1',
+                800: '#002BD8',
+                900: '#001a8a'
+              },
+              champagne: {
+                50: '#fdfbf7',
+                100: '#F7E7CE',
+                200: '#f0d9b5',
+                300: '#e8ca9d'
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+            overflow-x: hidden;
+        }
+        
+        /* Safe area insets for notched devices */
+        .safe-top {
+            padding-top: max(16px, env(safe-area-inset-top));
+        }
+        
+        .safe-bottom {
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
+        }
+        
+        /* Hide scrollbar */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Mobile button press effect */
+        .btn-press:active {
+            transform: scale(0.96);
+        }
+        
+        .btn-press {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        
+        /* Input focus styles */
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+        }
+
+        /* Floating button animation */
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(1.3);
+                opacity: 0;
+            }
+        }
+
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Card hover effect */
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card-hover:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Trend animation */
+        @keyframes slideUp {
+            from {
+                transform: translateY(10px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .trend-animate {
+            animation: slideUp 0.3s ease;
+        }
+
+        /* Skeleton loading */
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 1000px 100%;
+            animation: shimmer 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen">
+
+    <!-- Fixed Mobile Header -->
+    <header class="sticky top-0 z-50 bg-royal-600 text-white shadow-lg safe-top">
+        <div class="px-4 py-4 flex items-center justify-between">
+            <button onclick="toggleMenu()" class="btn-press text-white">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-toilet text-xl"></i>
+                <h1 class="text-lg font-bold">Poopy Adventure</h1>
+            </div>
+            <a href="reports.html" class="btn-press text-white">
+                <i class="fa-solid fa-chart-line text-xl"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Side Menu -->
+    <div id="side-menu" class="fixed inset-0 bg-black/50 z-50 hidden" onclick="toggleMenu()">
+        <div class="absolute left-0 top-0 h-full w-80 bg-white shadow-2xl" onclick="event.stopPropagation()">
+            <div class="safe-top bg-royal-600 text-white p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold">Menu</h2>
+                    <button onclick="toggleMenu()" class="btn-press">
+                        <i class="fa-solid fa-xmark text-2xl"></i>
+                    </button>
+                </div>
+                <div id="user-info" class="text-sm opacity-90">
+                    <i class="fa-solid fa-spinner fa-spin mr-2"></i>Loading...
+                </div>
+            </div>
+            
+            <nav class="p-4">
+                <a href="mobile-index.html" class="flex items-center gap-3 p-4 rounded-xl bg-royal-50 text-royal-700 font-semibold mb-2">
+                    <i class="fa-solid fa-home text-xl w-6"></i>
+                    <span>Home</span>
+                </a>
+                <a href="overall-history.html" class="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold mb-2">
+                    <i class="fa-solid fa-clock-rotate-left text-xl w-6"></i>
+                    <span>Overall History</span>
+                </a>
+                <a href="reports.html" class="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold mb-2">
+                    <i class="fa-solid fa-chart-line text-xl w-6"></i>
+                    <span>Reports</span>
+                </a>
+                <a href="settings.html" class="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold mb-2">
+                    <i class="fa-solid fa-gear text-xl w-6"></i>
+                    <span>Settings</span>
+                </a>
+                <div class="border-t border-gray-200 my-4"></div>
+                <button id="auth-action-btn" onclick="handleAuthAction()" class="flex items-center gap-3 p-4 rounded-xl hover:bg-gray-50 text-gray-700 font-semibold w-full">
+                    <i class="fa-solid fa-right-to-bracket text-xl w-6"></i>
+                    <span>Sign In</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="px-4 pt-4 pb-24">
+
+        <!-- KPI Cards - Enhanced 2 Column Grid -->
+        <div class="grid grid-cols-2 gap-3 mb-3">
+            <!-- Total Entries -->
+            <div class="bg-gradient-to-br from-royal-500 to-royal-700 rounded-2xl p-4 shadow-lg card-hover relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-white/10 text-6xl">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="text-xs font-semibold text-white/80 uppercase tracking-wide mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-database text-xs"></i>
+                        Total
+                    </div>
+                    <div class="flex items-end justify-between">
+                        <div id="kpi-total" class="text-3xl font-bold text-white">0</div>
+                        <div id="total-trend" class="text-xs text-white/70 font-semibold"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today -->
+            <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl p-4 shadow-lg card-hover relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-white/10 text-6xl">
+                    <i class="fa-solid fa-calendar-day"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="text-xs font-semibold text-white/80 uppercase tracking-wide mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-sun text-xs"></i>
+                        Today
+                    </div>
+                    <div class="flex items-end justify-between">
+                        <div id="kpi-today" class="text-3xl font-bold text-white">0</div>
+                        <div id="today-trend" class="text-xs text-white/70 font-semibold"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- This Week -->
+            <div class="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-4 shadow-lg card-hover relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-white/10 text-6xl">
+                    <i class="fa-solid fa-calendar-week"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="text-xs font-semibold text-white/80 uppercase tracking-wide mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-calendar text-xs"></i>
+                        This Week
+                    </div>
+                    <div class="flex items-end justify-between">
+                        <div id="kpi-week" class="text-3xl font-bold text-white">0</div>
+                        <div id="week-trend" class="text-xs text-white/70 font-semibold"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Per Day -->
+            <div class="bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl p-4 shadow-lg card-hover relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-white/10 text-6xl">
+                    <i class="fa-solid fa-chart-simple"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="text-xs font-semibold text-white/80 uppercase tracking-wide mb-1 flex items-center gap-1">
+                        <i class="fa-solid fa-percent text-xs"></i>
+                        Avg/Day
+                    </div>
+                    <div class="flex items-end justify-between">
+                        <div id="kpi-avg" class="text-3xl font-bold text-white">0</div>
+                        <div class="text-xs text-white/70 font-semibold">entries</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats Bar -->
+        <div class="bg-white rounded-2xl p-4 shadow-md mb-4 grid grid-cols-3 gap-3">
+            <div class="text-center">
+                <div class="text-xs text-gray-500 mb-1">Last Entry</div>
+                <div id="last-entry-time" class="text-sm font-bold text-gray-800">-</div>
+            </div>
+            <div class="text-center border-x border-gray-200">
+                <div class="text-xs text-gray-500 mb-1">Streak</div>
+                <div id="streak-days" class="text-sm font-bold text-royal-600">
+                    <i class="fa-solid fa-fire mr-1"></i>0 days
+                </div>
+            </div>
+            <div class="text-center">
+                <div class="text-xs text-gray-500 mb-1">Health Score</div>
+                <div id="health-score" class="text-sm font-bold text-emerald-600">-</div>
+            </div>
+        </div>
+
+        <!-- Add Entry Button - Sleek -->
+        <div class="relative mb-4">
+            <a href="add-entry.html" id="toggle-form-btn" 
+                    class="btn-press relative w-full bg-gradient-to-r from-royal-600 to-royal-700 text-white py-3 rounded-xl font-semibold shadow-lg text-sm flex items-center justify-center gap-2 hover:shadow-xl transition-all">
+                <i class="fa-solid fa-plus text-sm"></i>
+                <span>Add New Entry</span>
+            </a>
+        </div>
+
+        <!-- Log Form -->
+        <form id="poop-form" class="bg-white rounded-2xl p-5 shadow-md mb-4 hidden">
+            <div class="flex justify-between items-center mb-5">
+                <h2 class="text-xl font-bold text-royal-800">New Entry</h2>
+                <button type="button" onclick="toggleForm()" class="btn-press text-gray-400 hover:text-gray-600 text-2xl p-2 -m-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Section: Timing -->
+            <div class="mb-6 pb-5 border-b-2 border-gray-100">
+                <h3 class="text-sm font-bold text-royal-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-clock"></i> When
+                </h3>
+
+            <!-- Date & Time -->
+            <div class="mb-4 grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fa-solid fa-calendar mr-2"></i>Date
+                    </label>
+                    <input type="date" name="date" id="entry-date" required 
+                           class="w-full p-3 border-2 border-gray-200 rounded-xl text-base focus:border-royal-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fa-solid fa-clock mr-2"></i>Time
+                    </label>
+                    <input type="time" name="time" id="entry-time" required 
+                           class="w-full p-3 border-2 border-gray-200 rounded-xl text-base focus:border-royal-500">
+                </div>
+            </div>
+
+            <!-- Duration Slider -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fa-solid fa-stopwatch mr-2"></i>Duration: <span id="duration-value" class="text-royal-600 font-bold">5 min</span>
+                </label>
+                <input type="range" name="duration" id="manual-duration" min="1" max="60" value="5" 
+                       class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-royal-600"
+                       oninput="document.getElementById('duration-value').textContent = this.value + ' min'">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>1 min</span>
+                    <span>30 min</span>
+                    <span>60 min</span>
+                </div>
+            </div>
+            </div>
+
+            <!-- Section: Characteristics -->
+            <div class="mb-6 pb-5 border-b-2 border-gray-100">
+                <h3 class="text-sm font-bold text-royal-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass"></i> Characteristics
+                </h3>
+
+            <!-- Bristol Scale - Visual Radio Buttons -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-chart-simple mr-2"></i>Bristol Scale Type
+                </label>
+                <div class="grid grid-cols-7 gap-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="bristol" value="1" required class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-3 text-center font-bold text-lg transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            1
+                        </div>
+                        <div class="text-xs text-center text-gray-500 mt-1">Hard</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="bristol" value="2" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-3 text-center font-bold text-lg transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            2
+                        </div>
+                        <div class="text-xs text-center text-gray-500 mt-1">Lumpy</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="bristol" value="3" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-3 text-center font-bold text-lg transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            3
+                        </div>
+                        <div class="text-xs text-center text-gray-500 mt-1">Crack</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="bristol" value="4" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-3 text-center font-bold text-lg transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            4
+                        </div>
+                        <div class="text-xs text-center text-gray-500 mt-1">Ideal</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="bristol" value="5" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-3 text-center font-bold text-lg transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            5
+                        </div>
+                        <div class="text-xs text-center text-gray-500 mt-1">Soft</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="bristol" value="6" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-3 text-center font-bold text-lg transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            6
+                        </div>
+                        <div class="text-xs text-center text-gray-500 mt-1">Mushy</div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="bristol" value="7" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-3 text-center font-bold text-lg transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            7
+                        </div>
+                        <div class="text-xs text-center text-gray-500 mt-1">Liquid</div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Color - Visual Color Picker -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-palette mr-2"></i>Color
+                </label>
+                <div class="grid grid-cols-4 gap-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="color" value="brown" required class="peer hidden">
+                        <div class="peer-checked:ring-4 peer-checked:ring-royal-500 bg-amber-700 rounded-xl p-3 h-16 flex items-center justify-center transition-all border-2 peer-checked:border-royal-600 border-transparent shadow-md">
+                            <span class="text-white text-xs font-bold">Brown</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="color" value="light-brown" class="peer hidden">
+                        <div class="peer-checked:ring-4 peer-checked:ring-royal-500 bg-amber-400 rounded-xl p-3 h-16 flex items-center justify-center transition-all border-2 peer-checked:border-royal-600 border-transparent shadow-md">
+                            <span class="text-gray-800 text-xs font-bold">Light</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="color" value="dark-brown" class="peer hidden">
+                        <div class="peer-checked:ring-4 peer-checked:ring-royal-500 bg-amber-900 rounded-xl p-3 h-16 flex items-center justify-center transition-all border-2 peer-checked:border-royal-600 border-transparent shadow-md">
+                            <span class="text-white text-xs font-bold">Dark</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="color" value="yellow" class="peer hidden">
+                        <div class="peer-checked:ring-4 peer-checked:ring-royal-500 bg-yellow-400 rounded-xl p-3 h-16 flex items-center justify-center transition-all border-2 peer-checked:border-royal-600 border-transparent shadow-md">
+                            <span class="text-gray-800 text-xs font-bold">Yellow</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="color" value="green" class="peer hidden">
+                        <div class="peer-checked:ring-4 peer-checked:ring-royal-500 bg-green-600 rounded-xl p-3 h-16 flex items-center justify-center transition-all border-2 peer-checked:border-royal-600 border-transparent shadow-md">
+                            <span class="text-white text-xs font-bold">Green</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="color" value="black" class="peer hidden">
+                        <div class="peer-checked:ring-4 peer-checked:ring-royal-500 bg-gray-900 rounded-xl p-3 h-16 flex items-center justify-center transition-all border-2 peer-checked:border-royal-600 border-transparent shadow-md">
+                            <span class="text-white text-xs font-bold">Black</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="color" value="red" class="peer hidden">
+                        <div class="peer-checked:ring-4 peer-checked:ring-royal-500 bg-red-600 rounded-xl p-3 h-16 flex items-center justify-center transition-all border-2 peer-checked:border-royal-600 border-transparent shadow-md">
+                            <span class="text-white text-xs font-bold">Red</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="color" value="pale" class="peer hidden">
+                        <div class="peer-checked:ring-4 peer-checked:ring-royal-500 bg-gray-200 rounded-xl p-3 h-16 flex items-center justify-center transition-all border-2 peer-checked:border-royal-600 border-transparent shadow-md">
+                            <span class="text-gray-800 text-xs font-bold">Pale</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Volume - Radio Buttons -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-ruler mr-2"></i>Volume
+                </label>
+                <div class="grid grid-cols-3 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="volume" value="small" required class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-4 text-center font-semibold transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            <div class="text-2xl mb-1">🤏</div>
+                            Small
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="volume" value="medium" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-4 text-center font-semibold transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            <div class="text-2xl mb-1">👌</div>
+                            Medium
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="volume" value="large" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 rounded-xl p-4 text-center font-semibold transition-all border-2 peer-checked:border-royal-600 border-transparent">
+                            <div class="text-2xl mb-1">✊</div>
+                            Large
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Shape - Icon Buttons -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-shapes mr-2"></i>Shape
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="shape" value="log" required class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-white text-gray-700 rounded-2xl p-4 text-center font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200 shadow-sm">
+                            <div class="text-3xl mb-2">━━━</div>
+                            <div class="text-sm">Log Shape</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="shape" value="pellets" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-white text-gray-700 rounded-2xl p-4 text-center font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200 shadow-sm">
+                            <div class="text-3xl mb-2">• • •</div>
+                            <div class="text-sm">Pellets</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="shape" value="chunks" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-white text-gray-700 rounded-2xl p-4 text-center font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200 shadow-sm">
+                            <div class="text-3xl mb-2">▪ ▪ ▪</div>
+                            <div class="text-sm">Chunks</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="shape" value="soft" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-white text-gray-700 rounded-2xl p-4 text-center font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200 shadow-sm">
+                            <div class="text-3xl mb-2">◠ ◠</div>
+                            <div class="text-sm">Soft Blobs</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer col-span-2">
+                        <input type="radio" name="shape" value="liquid" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-white text-gray-700 rounded-2xl p-4 text-center font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200 shadow-sm">
+                            <div class="text-3xl mb-2">≈≈≈</div>
+                            <div class="text-sm">Liquid</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Smell - Rating Scale -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-wind mr-2"></i>Smell Intensity
+                </label>
+                <div class="flex gap-2">
+                    <label class="cursor-pointer flex-1">
+                        <input type="radio" name="smell" value="none" required class="peer hidden">
+                        <div class="peer-checked:bg-green-500 peer-checked:text-white bg-white text-gray-700 rounded-xl p-3 text-center font-semibold transition-all border-2 peer-checked:border-green-500 border-gray-200 shadow-sm">
+                            <div class="text-xl">😌</div>
+                            <div class="text-xs mt-1">None</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer flex-1">
+                        <input type="radio" name="smell" value="mild" class="peer hidden">
+                        <div class="peer-checked:bg-lime-500 peer-checked:text-white bg-white text-gray-700 rounded-xl p-3 text-center font-semibold transition-all border-2 peer-checked:border-lime-500 border-gray-200 shadow-sm">
+                            <div class="text-xl">🙂</div>
+                            <div class="text-xs mt-1">Mild</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer flex-1">
+                        <input type="radio" name="smell" value="moderate" class="peer hidden">
+                        <div class="peer-checked:bg-yellow-500 peer-checked:text-white bg-white text-gray-700 rounded-xl p-3 text-center font-semibold transition-all border-2 peer-checked:border-yellow-500 border-gray-200 shadow-sm">
+                            <div class="text-xl">😐</div>
+                            <div class="text-xs mt-1">Moderate</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer flex-1">
+                        <input type="radio" name="smell" value="strong" class="peer hidden">
+                        <div class="peer-checked:bg-orange-500 peer-checked:text-white bg-white text-gray-700 rounded-xl p-3 text-center font-semibold transition-all border-2 peer-checked:border-orange-500 border-gray-200 shadow-sm">
+                            <div class="text-xl">😷</div>
+                            <div class="text-xs mt-1">Strong</div>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer flex-1">
+                        <input type="radio" name="smell" value="very-strong" class="peer hidden">
+                        <div class="peer-checked:bg-red-500 peer-checked:text-white bg-white text-gray-700 rounded-xl p-3 text-center font-semibold transition-all border-2 peer-checked:border-red-500 border-gray-200 shadow-sm">
+                            <div class="text-xl">🤢</div>
+                            <div class="text-xs mt-1">Severe</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            </div>
+
+            <!-- Section: Physical Experience -->
+            <div class="mb-6 pb-5 border-b-2 border-gray-100">
+                <h3 class="text-sm font-bold text-royal-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-heart-pulse"></i> Physical
+                </h3>
+
+            <!-- Pain Level Slider -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fa-solid fa-face-frown mr-2"></i>Pain Level: <span id="pain-value" class="text-royal-600 font-bold">0/10</span>
+                </label>
+                <input type="range" name="pain" id="pain-slider" min="0" max="10" value="0" 
+                       class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-royal-600"
+                       oninput="updatePainDisplay(this.value)">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>😊 None</span>
+                    <span>😐 Mild</span>
+                    <span>😰 Severe</span>
+                </div>
+            </div>
+
+            <!-- Medical Indicators - Toggle Style -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-stethoscope mr-2"></i>Medical Indicators
+                </label>
+                <div class="space-y-3">
+                    <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-droplet text-red-500 text-xl"></i>
+                            <span class="text-base font-semibold">Blood present</span>
+                        </div>
+                        <input type="checkbox" name="blood" class="w-6 h-6 text-red-600 rounded accent-red-600">
+                    </label>
+                    <label class="flex items-center justify-between p-4 bg-gray-50 rounded-xl cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-droplet text-amber-500 text-xl"></i>
+                            <span class="text-base font-semibold">Mucus present</span>
+                        </div>
+                        <input type="checkbox" name="mucus" class="w-6 h-6 text-amber-600 rounded accent-amber-600">
+                    </label>
+                </div>
+            </div>
+            </div>
+
+            <!-- Section: Symptoms & Warnings -->
+            <div class="mb-6 pb-5 border-b-2 border-gray-100">
+                <h3 class="text-sm font-bold text-royal-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Symptoms & Warnings
+                </h3>
+
+            <!-- Symptoms - Chip Style -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-3">
+                    <i class="fa-solid fa-heart-pulse mr-2"></i>Symptoms (tap to select)
+                </label>
+                <div class="flex flex-wrap gap-2">
+                    <label class="cursor-pointer">
+                        <input type="checkbox" name="symptom-cramping" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 px-4 py-3 rounded-full font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200">
+                            <i class="fa-solid fa-bolt mr-1"></i> Cramping
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" name="symptom-bloating" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 px-4 py-3 rounded-full font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200">
+                            <i class="fa-solid fa-circle-dot mr-1"></i> Bloating
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" name="symptom-nausea" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 px-4 py-3 rounded-full font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200">
+                            <i class="fa-solid fa-face-dizzy mr-1"></i> Nausea
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" name="symptom-gas" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 px-4 py-3 rounded-full font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200">
+                            <i class="fa-solid fa-wind mr-1"></i> Gas
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="checkbox" name="symptom-urgency" class="peer hidden">
+                        <div class="peer-checked:bg-royal-600 peer-checked:text-white bg-gray-100 text-gray-700 px-4 py-3 rounded-full font-semibold transition-all border-2 peer-checked:border-royal-600 border-gray-200">
+                            <i class="fa-solid fa-gauge-high mr-1"></i> Urgency
+                        </div>
+                    </label>
+                </div>
+            </div>
+            </div>
+
+            <!-- Section: Additional Notes -->
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-royal-700 uppercase tracking-wide mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-note-sticky"></i> Notes
+                </h3>
+
+            <!-- Notes -->
+            <textarea name="notes" rows="4" placeholder="Any additional details, food eaten, stress level, etc..." 
+                      class="w-full p-4 border-2 border-gray-200 rounded-xl text-base focus:border-royal-500 resize-none bg-gray-50"></textarea>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-2">
+                <button type="submit" 
+                        class="btn-press flex-1 bg-royal-600 text-white py-4 rounded-full font-bold shadow-lg text-lg">
+                    <i class="fa-solid fa-floppy-disk mr-2"></i>Save Entry
+                </button>
+                <button type="button" onclick="exportData()" 
+                        class="btn-press bg-champagne-100 text-royal-800 px-6 py-4 rounded-full font-bold shadow-lg text-xl">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+            </div>
+        </form>
+
+        <!-- History -->
+        <div class="bg-white rounded-2xl p-5 shadow-md">
+            <div class="mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-xl font-bold text-royal-800">Today's History</h2>
+                    <span id="today-count-badge" class="bg-royal-100 text-royal-700 px-3 py-1 rounded-full text-xs font-bold"></span>
+                </div>
+                <p class="text-sm text-gray-500 mb-3">
+                    <i class="fa-solid fa-calendar-day mr-1"></i>
+                    <span id="current-date-display"></span>
+                </p>
+                <div class="flex gap-2">
+                    <button onclick="toggleViewMode()" id="view-toggle-btn"
+                            class="btn-press flex-1 bg-royal-600 text-white py-3 rounded-xl font-semibold text-sm">
+                        <i class="fa-solid fa-calendar mr-2"></i>Calendar View
+                    </button>
+                    <button onclick="clearAll()" 
+                            class="btn-press bg-red-100 text-red-700 px-4 py-3 rounded-xl font-semibold text-sm">
+                        <i class="fa-solid fa-trash mr-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calendar View -->
+            <div id="calendar-view" class="hidden">
+                <!-- Month Navigation -->
+                <div class="flex justify-between items-center mb-4">
+                    <button onclick="changeMonth(-1)" class="btn-press p-2 text-royal-600">
+                        <i class="fa-solid fa-chevron-left text-xl"></i>
+                    </button>
+                    <div id="calendar-month" class="text-lg font-bold text-royal-800"></div>
+                    <button onclick="changeMonth(1)" class="btn-press p-2 text-royal-600">
+                        <i class="fa-solid fa-chevron-right text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div class="mb-4">
+                    <!-- Day Headers -->
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <div class="text-center text-xs font-semibold text-gray-600 py-2">Sun</div>
+                        <div class="text-center text-xs font-semibold text-gray-600 py-2">Mon</div>
+                        <div class="text-center text-xs font-semibold text-gray-600 py-2">Tue</div>
+                        <div class="text-center text-xs font-semibold text-gray-600 py-2">Wed</div>
+                        <div class="text-center text-xs font-semibold text-gray-600 py-2">Thu</div>
+                        <div class="text-center text-xs font-semibold text-gray-600 py-2">Fri</div>
+                        <div class="text-center text-xs font-semibold text-gray-600 py-2">Sat</div>
+                    </div>
+                    <!-- Calendar Days -->
+                    <div id="calendar-grid" class="grid grid-cols-7 gap-1">
+                        <!-- Generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Selected Day Entries -->
+                <div id="selected-day-entries" class="mt-4">
+                    <p class="text-gray-400 text-center py-4">Select a day to view entries</p>
+                </div>
+            </div>
+
+            <!-- List View -->
+            <div id="history-container" class="space-y-3">
+                <p class="text-gray-400 text-center py-8">No entries yet</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Auth check and menu setup
+        async function setupAuth() {
+            const isAuth = await Auth.isAuthenticated();
+            const isGuest = localStorage.getItem('guestMode') === 'true';
+            const userInfoDiv = document.getElementById('user-info');
+            const authBtn = document.getElementById('auth-action-btn');
+
+            if (isAuth) {
+                const user = await Auth.getUser();
+                const profile = await Auth.getProfile();
+                
+                userInfoDiv.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                            <i class="fa-solid fa-user text-2xl"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">${profile?.full_name || user.email}</div>
+                            <div class="text-xs opacity-75">${user.email}</div>
+                        </div>
+                    </div>
+                `;
+                
+                authBtn.innerHTML = `
+                    <i class="fa-solid fa-right-from-bracket text-xl w-6"></i>
+                    <span>Sign Out</span>
+                `;
+            } else if (isGuest) {
+                userInfoDiv.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-user-ninja"></i>
+                        <span>Guest Mode</span>
+                    </div>
+                `;
+                
+                authBtn.innerHTML = `
+                    <i class="fa-solid fa-right-to-bracket text-xl w-6"></i>
+                    <span>Sign In</span>
+                `;
+            } else {
+                // Not authenticated and not guest - redirect to auth
+                window.location.href = 'auth.html';
+            }
+        }
+
+        async function handleAuthAction() {
+            const isAuth = await Auth.isAuthenticated();
+            
+            if (isAuth) {
+                if (confirm('Are you sure you want to sign out?')) {
+                    await Auth.signOut();
+                }
+            } else {
+                window.location.href = 'auth.html';
+            }
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('side-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Helper function to get logs from Supabase or localStorage
+        async function getLogs() {
+            try {
+                const isAuth = await Auth.isAuthenticated();
+                
+                if (isAuth) {
+                    // Fetch from Supabase
+                    const entries = await PoopDB.getAllEntries();
+                    console.log('📊 Loaded', entries.length, 'entries from Supabase');
+                    return entries;
+                } else {
+                    // Fallback to localStorage for guest mode
+                    const logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+                    console.log('📊 Loaded', logs.length, 'entries from localStorage (guest mode)');
+                    return logs;
+                }
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                // Fallback to localStorage on error
+                return JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+            }
+        }
+
+        // Update pain level display
+        function updatePainDisplay(value) {
+            const painValue = document.getElementById('pain-value');
+            const painSlider = document.getElementById('pain-slider');
+            
+            painValue.textContent = value + '/10';
+            
+            // Change color based on severity
+            if (value == 0) {
+                painValue.className = 'text-green-600 font-bold';
+            } else if (value <= 3) {
+                painValue.className = 'text-yellow-600 font-bold';
+            } else if (value <= 6) {
+                painValue.className = 'text-orange-600 font-bold';
+            } else {
+                painValue.className = 'text-red-600 font-bold';
+            }
+        }
+
+        // Form submission
+        document.getElementById('poop-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            // Create timestamp from date and time inputs
+            const dateStr = formData.get('date');
+            const timeStr = formData.get('time');
+            const timestamp = new Date(`${dateStr}T${timeStr}`).toISOString();
+            
+            const entry = {
+                id: Date.now().toString(),
+                timestamp: timestamp,
+                duration: parseInt(formData.get('duration')),
+                bristol: formData.get('bristol'),
+                color: formData.get('color'),
+                volume: formData.get('volume'),
+                shape: formData.get('shape'),
+                smell: formData.get('smell'),
+                pain: formData.get('pain'),
+                hasBlood: formData.get('blood') === 'on',
+                hasMucus: formData.get('mucus') === 'on',
+                symptoms: [
+                    formData.get('symptom-cramping') ? 'Cramping' : null,
+                    formData.get('symptom-bloating') ? 'Bloating' : null,
+                    formData.get('symptom-nausea') ? 'Nausea' : null,
+                    formData.get('symptom-gas') ? 'Gas' : null,
+                    formData.get('symptom-urgency') ? 'Urgency' : null
+                ].filter(Boolean),
+                notes: formData.get('notes')
+            };
+
+            // Save to localStorage
+            let logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+            logs.unshift(entry);
+            localStorage.setItem('poopLogsProV2', JSON.stringify(logs));
+
+            // Reset form
+            e.target.reset();
+            
+            // Update UI
+            updateKPIs();
+            renderHistory();
+            
+            // Hide form and show button
+            toggleForm();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        async function updateKPIs() {
+            const logs = await getLogs();
+            
+            // Total
+            document.getElementById('kpi-total').textContent = logs.length;
+            
+            // Today
+            const today = new Date().toDateString();
+            const todayCount = logs.filter(log => 
+                new Date(log.timestamp).toDateString() === today
+            ).length;
+            document.getElementById('kpi-today').textContent = todayCount;
+            
+            // Yesterday (for trend)
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayCount = logs.filter(log => 
+                new Date(log.timestamp).toDateString() === yesterday.toDateString()
+            ).length;
+            
+            // Show trend for today
+            const todayTrend = document.getElementById('today-trend');
+            if (yesterdayCount > 0) {
+                if (todayCount > yesterdayCount) {
+                    todayTrend.innerHTML = '<i class="fa-solid fa-arrow-up"></i> +' + (todayCount - yesterdayCount);
+                } else if (todayCount < yesterdayCount) {
+                    todayTrend.innerHTML = '<i class="fa-solid fa-arrow-down"></i> ' + (todayCount - yesterdayCount);
+                } else {
+                    todayTrend.innerHTML = '<i class="fa-solid fa-minus"></i>';
+                }
+            }
+            
+            // This week
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const weekCount = logs.filter(log => 
+                new Date(log.timestamp) >= weekAgo
+            ).length;
+            document.getElementById('kpi-week').textContent = weekCount;
+            
+            // Average per day
+            if (logs.length > 0) {
+                const firstLog = new Date(logs[logs.length - 1].timestamp);
+                const daysSince = Math.max(1, Math.ceil((Date.now() - firstLog) / (1000 * 60 * 60 * 24)));
+                const avg = (logs.length / daysSince).toFixed(1);
+                document.getElementById('kpi-avg').textContent = avg;
+            } else {
+                document.getElementById('kpi-avg').textContent = '0';
+            }
+
+            // Quick Stats
+            updateQuickStats(logs);
+        }
+
+        function updateQuickStats(logs) {
+            // Last Entry Time
+            const lastEntryEl = document.getElementById('last-entry-time');
+            if (logs.length > 0) {
+                const lastEntry = new Date(logs[0].timestamp);
+                const now = new Date();
+                const diffHours = Math.floor((now - lastEntry) / (1000 * 60 * 60));
+                
+                if (diffHours < 1) {
+                    lastEntryEl.textContent = 'Just now';
+                } else if (diffHours < 24) {
+                    lastEntryEl.textContent = diffHours + 'h ago';
+                } else {
+                    const diffDays = Math.floor(diffHours / 24);
+                    lastEntryEl.textContent = diffDays + 'd ago';
+                }
+            } else {
+                lastEntryEl.textContent = '-';
+            }
+
+            // Streak
+            const streakEl = document.getElementById('streak-days');
+            let streak = 0;
+            if (logs.length > 0) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                for (let i = 0; ; i++) {
+                    const checkDate = new Date(today);
+                    checkDate.setDate(checkDate.getDate() - i);
+                    const hasEntry = logs.some(log => {
+                        const logDate = new Date(log.timestamp);
+                        logDate.setHours(0, 0, 0, 0);
+                        return logDate.getTime() === checkDate.getTime();
+                    });
+                    
+                    if (hasEntry) {
+                        streak++;
+                    } else if (i > 0) {
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            
+            if (streak > 0) {
+                streakEl.innerHTML = `<i class="fa-solid fa-fire mr-1"></i>${streak} days`;
+                streakEl.className = 'text-sm font-bold ' + (streak >= 7 ? 'text-orange-600' : 'text-royal-600');
+            } else {
+                streakEl.innerHTML = '<i class="fa-solid fa-fire mr-1 opacity-30"></i>0 days';
+                streakEl.className = 'text-sm font-bold text-gray-400';
+            }
+
+            // Health Score (simplified - based on Bristol scale average)
+            const healthScoreEl = document.getElementById('health-score');
+            if (logs.length >= 3) {
+                const recentLogs = logs.slice(0, 7);
+                const avgBristol = recentLogs.reduce((sum, log) => sum + (log.bristol || 4), 0) / recentLogs.length;
+                const hasBlood = recentLogs.some(log => log.blood);
+                const highPain = recentLogs.some(log => (log.pain || 0) >= 7);
+                
+                let score = 100;
+                
+                // Ideal Bristol is 3-5
+                if (avgBristol < 2 || avgBristol > 6) score -= 30;
+                else if (avgBristol < 3 || avgBristol > 5) score -= 15;
+                
+                if (hasBlood) score -= 40;
+                if (highPain) score -= 20;
+                
+                score = Math.max(0, Math.min(100, score));
+                
+                let color = 'text-emerald-600';
+                let emoji = '😊';
+                if (score < 60) {
+                    color = 'text-red-600';
+                    emoji = '😟';
+                } else if (score < 80) {
+                    color = 'text-amber-600';
+                    emoji = '😐';
+                }
+                
+                healthScoreEl.innerHTML = `${emoji} ${score}`;
+                healthScoreEl.className = 'text-sm font-bold ' + color;
+            } else {
+                healthScoreEl.textContent = '-';
+                healthScoreEl.className = 'text-sm font-bold text-gray-400';
+            }
+        }
+
+        async function renderHistory() {
+            const allLogs = await getLogs();
+            const container = document.getElementById('history-container');
+            
+            // Filter only today's entries
+            const today = new Date().toDateString();
+            const logs = allLogs.filter(log => 
+                new Date(log.timestamp).toDateString() === today
+            );
+            
+            if (logs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-6xl mb-4 opacity-20 text-gray-400"><i class="fa-solid fa-calendar-day"></i></div>
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">No Entries Today</h3>
+                        <p class="text-gray-500 mb-6 px-4">You haven't logged any entries today yet.</p>
+                        <div class="inline-flex items-center gap-2 bg-royal-50 text-royal-700 px-4 py-2 rounded-full text-sm font-semibold">
+                            <i class="fa-solid fa-calendar-day"></i>
+                            Add your first entry for ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Helper function for Bristol scale color coding
+            const getBristolColor = (bristol) => {
+                const colors = {
+                    1: 'border-l-red-500',
+                    2: 'border-l-orange-500',
+                    3: 'border-l-emerald-500',
+                    4: 'border-l-emerald-500',
+                    5: 'border-l-emerald-500',
+                    6: 'border-l-amber-500',
+                    7: 'border-l-red-500'
+                };
+                return colors[bristol] || 'border-l-gray-300';
+            };
+
+            const getBristolEmoji = (bristol) => {
+                const emojis = {
+                    1: '🔴', 2: '🟠', 3: '🟢', 4: '🟢', 5: '🟢', 6: '🟡', 7: '🔴'
+                };
+                return emojis[bristol] || '⚪';
+            };
+
+            container.innerHTML = logs.map(log => `
+                <div class="bg-white p-4 rounded-2xl shadow-md border-l-4 ${getBristolColor(log.bristol)} card-hover relative overflow-hidden">
+                    <!-- Background Pattern -->
+                    <div class="absolute top-0 right-0 text-6xl opacity-5">
+                        ${getBristolEmoji(log.bristol)}
+                    </div>
+                    
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-lg">${getBristolEmoji(log.bristol)}</span>
+                                    <div class="font-bold text-gray-800 text-base">
+                                        ${new Date(log.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                    </div>
+                                    <span class="text-gray-400">•</span>
+                                    <div class="text-sm text-gray-600">
+                                        ${new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-500 flex items-center gap-2">
+                                    <i class="fa-solid fa-clock"></i> ${log.duration} min
+                                </div>
+                            </div>
+                            <button onclick="deleteEntry('${log.id}')" 
+                                    class="btn-press text-gray-400 hover:text-red-500 text-lg p-2 -m-2">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Main Info -->
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-royal-500 to-royal-600 text-white shadow-sm">
+                                <i class="fa-solid fa-chart-simple mr-1"></i>Type ${log.bristol}
+                            </span>
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                                🎨 ${log.color}
+                            </span>
+                            <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                                📏 ${log.volume}
+                            </span>
+                            ${log.shape ? `<span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">✨ ${log.shape}</span>` : ''}
+                            ${log.smell ? `<span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">👃 ${log.smell}</span>` : ''}
+                            ${log.pain > 0 ? `<span class="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-700 border border-red-200">⚡ Pain: ${log.pain}/10</span>` : ''}
+                        </div>
+                        
+                        <!-- Warnings -->
+                        ${log.hasBlood || log.hasMucus ? `
+                        <div class="bg-red-50 border border-red-200 rounded-xl p-3 mb-3">
+                            ${log.hasBlood ? '<div class="text-red-700 font-semibold text-sm flex items-center gap-2"><i class="fa-solid fa-droplet"></i>Blood detected</div>' : ''}
+                            ${log.hasMucus ? '<div class="text-amber-700 font-semibold text-sm flex items-center gap-2"><i class="fa-solid fa-droplet"></i>Mucus present</div>' : ''}
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Symptoms -->
+                        ${log.symptoms.length > 0 ? `
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                            <div class="text-xs font-bold text-amber-900 uppercase mb-1.5">Symptoms</div>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${log.symptoms.map(s => `<span class="px-2 py-0.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800">${s}</span>`).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Notes -->
+                        ${log.notes ? `
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                            <div class="text-xs font-bold text-blue-900 uppercase mb-1">Notes</div>
+                            <div class="text-sm text-blue-800">${log.notes}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            // Update today's count badge
+            const badge = document.getElementById('today-count-badge');
+            if (badge) {
+                badge.textContent = logs.length === 1 ? '1 entry' : `${logs.length} entries`;
+            }
+        }
+
+        async function deleteEntry(id) {
+            if (!confirm('Delete this entry?')) return;
+            
+            try {
+                const isAuth = await Auth.isAuthenticated();
+                
+                if (isAuth) {
+                    // Delete from Supabase
+                    await PoopDB.deleteEntry(id);
+                    console.log('🗑️ Deleted from Supabase');
+                } else {
+                    // Delete from localStorage
+                    let logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+                    logs = logs.filter(log => log.id !== id);
+                    localStorage.setItem('poopLogsProV2', JSON.stringify(logs));
+                    console.log('🗑️ Deleted from localStorage');
+                }
+                
+                await updateKPIs();
+                await renderHistory();
+                
+                // Refresh calendar view if active
+                if (viewMode === 'calendar') {
+                    await renderCalendar();
+                    if (selectedDate) {
+                        await selectDay(selectedDate.getDate());
+                    }
+                }
+            } catch (error) {
+                console.error('Error deleting entry:', error);
+                alert('Error deleting entry: ' + error.message);
+            }
+        }
+
+        function clearAll() {
+            if (!confirm('Delete all entries? This cannot be undone.')) return;
+            
+            localStorage.removeItem('poopLogsProV2');
+            updateKPIs();
+            renderHistory();
+            
+            // Refresh calendar view if active
+            if (viewMode === 'calendar') {
+                renderCalendar();
+                document.getElementById('selected-day-entries').innerHTML = 
+                    '<p class="text-gray-400 text-center py-4">Select a day to view entries</p>';
+            }
+        }
+
+        function exportData() {
+            const logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+            const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `poop-tracker-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function toggleForm() {
+            const form = document.getElementById('poop-form');
+            const btn = document.getElementById('toggle-form-btn');
+            
+            if (form.classList.contains('hidden')) {
+                form.classList.remove('hidden');
+                btn.classList.add('hidden');
+                // Set current date and time
+                setCurrentDateTime();
+                // Scroll to form
+                form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                form.classList.add('hidden');
+                btn.classList.remove('hidden');
+                // Scroll to button
+                btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function setCurrentDateTime() {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().slice(0, 5);
+            document.getElementById('entry-date').value = dateStr;
+            document.getElementById('entry-time').value = timeStr;
+            
+            // Update current date display in history section
+            const dateDisplay = document.getElementById('current-date-display');
+            if (dateDisplay) {
+                dateDisplay.textContent = now.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    month: 'long', 
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            }
+        }
+
+        // Calendar functionality
+        let currentViewDate = new Date();
+        let selectedDate = null;
+        let viewMode = 'list'; // 'list' or 'calendar'
+
+        function toggleViewMode() {
+            viewMode = viewMode === 'list' ? 'calendar' : 'list';
+            const calendarView = document.getElementById('calendar-view');
+            const listView = document.getElementById('history-container');
+            const toggleBtn = document.getElementById('view-toggle-btn');
+
+            if (viewMode === 'calendar') {
+                calendarView.classList.remove('hidden');
+                listView.classList.add('hidden');
+                toggleBtn.innerHTML = '<i class="fa-solid fa-list mr-2"></i>List View';
+                toggleBtn.classList.remove('bg-royal-600', 'text-white');
+                toggleBtn.classList.add('bg-gray-800', 'text-white');
+                renderCalendar();
+            } else {
+                calendarView.classList.add('hidden');
+                listView.classList.remove('hidden');
+                toggleBtn.innerHTML = '<i class="fa-solid fa-calendar mr-2"></i>Calendar View';
+                toggleBtn.classList.remove('bg-gray-800');
+                toggleBtn.classList.add('bg-royal-600', 'text-white');
+            }
+        }
+
+        function changeMonth(delta) {
+            currentViewDate.setMonth(currentViewDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        async function renderCalendar() {
+            const logs = await getLogs();
+            
+            // Update month display
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('calendar-month').textContent = 
+                `${monthNames[currentViewDate.getMonth()]} ${currentViewDate.getFullYear()}`;
+
+            // Get first day of month and number of days
+            const year = currentViewDate.getFullYear();
+            const month = currentViewDate.getMonth();
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            // Count entries per day
+            const entriesByDay = {};
+            logs.forEach(log => {
+                const logDate = new Date(log.timestamp);
+                if (logDate.getMonth() === month && logDate.getFullYear() === year) {
+                    const day = logDate.getDate();
+                    entriesByDay[day] = (entriesByDay[day] || 0) + 1;
+                }
+            });
+
+            // Generate calendar grid
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            // Empty cells before first day
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += '<div class="aspect-square"></div>';
+            }
+
+            // Days of month
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = today.getDate() === day && 
+                               today.getMonth() === month && 
+                               today.getFullYear() === year;
+                const count = entriesByDay[day] || 0;
+                const hasEntries = count > 0;
+
+                grid.innerHTML += `
+                    <button onclick="selectDay(${day})" 
+                            class="btn-press aspect-square p-1 rounded-xl ${
+                                isToday ? 'bg-royal-100 border-2 border-royal-500' : 'bg-gray-50'
+                            } ${hasEntries ? 'ring-2 ring-royal-400' : ''} relative">
+                        <div class="text-sm font-semibold ${isToday ? 'text-royal-800' : 'text-gray-700'}">${day}</div>
+                        ${hasEntries ? `<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-5 h-5 bg-royal-600 text-white text-xs rounded-full flex items-center justify-center font-bold">${count}</div>` : ''}
+                    </button>
+                `;
+            }
+        }
+
+        async function selectDay(day) {
+            const logs = await getLogs();
+            const year = currentViewDate.getFullYear();
+            const month = currentViewDate.getMonth();
+            
+            selectedDate = new Date(year, month, day);
+            
+            // Filter logs for selected day
+            const dayLogs = logs.filter(log => {
+                const logDate = new Date(log.timestamp);
+                return logDate.getDate() === day && 
+                       logDate.getMonth() === month && 
+                       logDate.getFullYear() === year;
+            });
+
+            const container = document.getElementById('selected-day-entries');
+            
+            if (dayLogs.length === 0) {
+                container.innerHTML = `
+                    <p class="text-gray-400 text-center py-4">
+                        No entries for ${selectedDate.toLocaleDateString()}
+                    </p>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <h3 class="font-bold text-royal-800 mb-3 text-center">
+                    ${selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                </h3>
+                <div class="space-y-3">
+                    ${dayLogs.map(log => `
+                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <div class="font-bold text-royal-800 text-base">
+                                        ${new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </div>
+                                    <div class="text-sm text-gray-600">${log.duration} min</div>
+                                </div>
+                                <button onclick="deleteEntry('${log.id}')" 
+                                        class="btn-press text-red-500 text-xl p-2 -m-2">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex flex-wrap gap-2 mb-2">
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-royal-100 text-royal-800">
+                                    Type ${log.bristol}
+                                </span>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-royal-100 text-royal-800">
+                                    ${log.color}
+                                </span>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-royal-100 text-royal-800">
+                                    ${log.volume}
+                                </span>
+                                ${log.shape ? `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-royal-100 text-royal-800">${log.shape}</span>` : ''}
+                                ${log.smell ? `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-royal-100 text-royal-800">${log.smell}</span>` : ''}
+                                ${log.pain > 0 ? `<span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">Pain: ${log.pain}/10</span>` : ''}
+                            </div>
+                            
+                            ${log.hasBlood ? '<div class="text-red-600 font-semibold text-sm"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Blood</div>' : ''}
+                            ${log.hasMucus ? '<div class="text-amber-600 font-semibold text-sm"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Mucus</div>' : ''}
+                            ${log.symptoms.length > 0 ? `<div class="text-sm text-gray-700 mt-2"><strong>Symptoms:</strong> ${log.symptoms.join(', ')}</div>` : ''}
+                            ${log.notes ? `<div class="text-sm text-gray-600 mt-2">${log.notes}</div>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Initialize on load
+        async function initializePage() {
+            await setupAuth();
+            await updateKPIs();
+            await renderHistory();
+            setCurrentDateTime();
+        }
+        
+        initializePage();
+    </script>
+</body>
+</html>
