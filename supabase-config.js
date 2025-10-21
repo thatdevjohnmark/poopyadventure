@@ -73,7 +73,23 @@ const PoopDB = {
                 .order('timestamp', { ascending: false });
             
             if (error) throw error;
-            return data || [];
+            
+            // Map snake_case database fields to camelCase for consistency with localStorage
+            return (data || []).map(entry => ({
+                id: entry.id,
+                timestamp: entry.timestamp,
+                duration: entry.duration,
+                bristol: entry.bristol,
+                color: entry.color,
+                volume: entry.volume,
+                shape: entry.shape,
+                smell: entry.smell,
+                pain: entry.pain,
+                hasBlood: entry.has_blood,
+                hasMucus: entry.has_mucus,
+                symptoms: entry.symptoms,
+                notes: entry.notes
+            }));
         } catch (error) {
             console.error('Error fetching entries:', error);
             return [];

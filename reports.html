@@ -6,8 +6,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#4169E1">
-    <title>Reports - Poopy Adventure Tracker</title>
+    <meta name="theme-color" content="#FFB6D9">
+    <title>✨ Reports - Poopy Adventure 📊</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
@@ -19,16 +19,24 @@
           extend: {
             colors: {
               royal: {
-                50: '#f0f5ff',
-                100: '#e0ebff',
-                200: '#c7d7fe',
-                300: '#a4bcfd',
-                400: '#8a9ff5',
-                500: '#4169E1',
-                600: '#3259f3',
-                700: '#1944f1',
-                800: '#002BD8',
-                900: '#001a8a'
+                50: '#fff5f7',
+                100: '#ffe4ec',
+                200: '#ffc9db',
+                300: '#ffa6c5',
+                400: '#ff7aab',
+                500: '#ff4d94',
+                600: '#f72585',
+                700: '#e01875',
+                800: '#b91465',
+                900: '#8b0f4e'
+              },
+              pastel: {
+                pink: '#FFB6D9',
+                purple: '#D4A5FF',
+                blue: '#A5D8FF',
+                mint: '#B8F2E6',
+                peach: '#FFD6BA',
+                lavender: '#E8D5FF'
               },
               champagne: {
                 50: '#fdfbf7',
@@ -42,10 +50,10 @@
       }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
         
         * {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', 'Quicksand', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
         
@@ -53,6 +61,19 @@
             overscroll-behavior: none;
             -webkit-overflow-scrolling: touch;
             overflow-x: hidden;
+            background: linear-gradient(135deg, #FFE5F1 0%, #FFF0F8 25%, #F0E6FF 50%, #FFE5F1 75%, #FFF5F7 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        @keyframes sparkle {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
         }
         
         .safe-top {
@@ -82,14 +103,20 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen">
+<body class="min-h-screen">
 
     <!-- Fixed Mobile Header -->
-    <header class="sticky top-0 z-50 bg-royal-600 text-white shadow-lg safe-top">
+    <header class="sticky top-0 z-50 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 text-white shadow-xl safe-top backdrop-blur-md bg-opacity-90">
         <div class="px-4 py-4 flex items-center justify-between">
-            <a href="mobile-index.html" class="btn-press text-white">
+            <a href="mobile-index.html" class="btn-press text-white hover:bg-white/30 rounded-full p-2 transition">
                 <i class="fa-solid fa-arrow-left text-xl"></i>
             </a>
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <span class="sparkle">📊</span> Reports <span class="sparkle">✨</span>
+            </h1>
+            <button></button>
+        </div>
+    </header>
             <h1 class="text-xl font-bold">Reports & Analytics</h1>
             <div class="w-6"></div>
         </div>
@@ -238,9 +265,29 @@
     <script>
         let bristolChart, colorChart, frequencyChart, timeChart;
 
-        function updateReports() {
+        // Helper function to get logs from Supabase or localStorage
+        async function getLogs() {
+            try {
+                const isAuth = await Auth.isAuthenticated();
+                
+                if (isAuth) {
+                    const entries = await PoopDB.getAllEntries();
+                    console.log('📊 Loaded', entries.length, 'entries from Supabase');
+                    return entries;
+                } else {
+                    const logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+                    console.log('📊 Loaded', logs.length, 'entries from localStorage');
+                    return logs;
+                }
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                return JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+            }
+        }
+
+        async function updateReports() {
             const days = parseInt(document.getElementById('time-period').value);
-            const logs = getFilteredLogs(days);
+            const logs = await getFilteredLogs(days);
 
             updateSummaryStats(logs);
             updateBristolChart(logs);
@@ -252,8 +299,8 @@
             updateHealthScore(logs);
         }
 
-        function getFilteredLogs(days) {
-            const allLogs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+        async function getFilteredLogs(days) {
+            const allLogs = await getLogs();
             
             if (days === 'all') return allLogs;
 
