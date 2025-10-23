@@ -3,94 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirm Your Signup - Poopy Adventure Tracker</title>
+    <title>✨ Confirm Your Signup - Poopy Adventure Tracker 💖</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f3f4f6;">
-    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f3f4f6;">
+<body style="margin: 0; padding: 0; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #FFE5F1 0%, #F0E6FF 50%, #FFE5F1 100%);">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #FFE5F1 0%, #F0E6FF 50%, #FFE5F1 100%);">
         <tr>
-            <td style="padding: 40px 20px;">
-                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
+            <td style="padding: 40px 20px; position: relative;">
+                <!-- Floating decorations -->
+                <div style="position: absolute; top: 50px; left: 30px; font-size: 32px; opacity: 0.3;">✨</div>
+                <div style="position: absolute; top: 80px; right: 40px; font-size: 28px; opacity: 0.3;">🌸</div>
+                <div style="position: absolute; bottom: 100px; left: 50px; font-size: 28px; opacity: 0.3;">💕</div>
+                <div style="position: absolute; bottom: 80px; right: 30px; font-size: 32px; opacity: 0.3;">🦋</div>
+                
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 24px; box-shadow: 0 8px 32px rgba(255, 105, 180, 0.2); overflow: hidden; border: 2px solid rgba(255, 182, 217, 0.3);">
                     
-                    <!-- Header with Royal Blue Background -->
+                    <!-- Girly-pop Header -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #4169E1 0%, #002BD8 100%); padding: 40px 30px; text-align: center;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">🚽</div>
-                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">Poopy Adventure Tracker</h1>
-                            <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 14px;">Your Health Companion</p>
+                        <td style="background: linear-gradient(135deg, #FFB6D9 0%, #FF8DC7 50%, #DA70D6 100%); padding: 40px 30px; text-align: center; position: relative;">
+                            <div style="font-size: 48px; margin-bottom: 10px; animation: bounce 2s infinite;">🧻✨</div>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold; text-shadow: 0 2px 8px rgba(0,0,0,0.15);">Poopy Adventure Tracker</h1>
+                            <p style="color: rgba(255, 255, 255, 0.95); margin: 10px 0 0 0; font-size: 14px; font-weight: 500;">💖 Your Wellness Journey Starts Here 💖</p>
                         </td>
                     </tr>
                     
                     <!-- Main Content -->
                     <tr>
                         <td style="padding: 40px 30px;">
-                            <h2 style="color: #1f2937; font-size: 24px; margin: 0 0 20px 0; font-weight: 600;">
-                                Confirm Your Signup
+                            <h2 style="background: linear-gradient(135deg, #FF69B4, #FF1493, #DA70D6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 26px; margin: 0 0 20px 0; font-weight: 700; text-align: center;">
+                                ✨ Confirm Your Signup ✨
                             </h2>
                             
-                            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
-                                Welcome to <strong style="color: #4169E1;">Poopy Adventure Tracker</strong>! We're excited to help you track your digestive health adventures.
+                            <p style="color: #4b5563; font-size: 16px; line-height: 1.8; margin: 0 0 20px 0; text-align: center;">
+                                Welcome to <strong style="background: linear-gradient(135deg, #FF69B4, #DA70D6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Poopy Adventure Tracker</strong>! 💕
                             </p>
                             
-                            <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">
-                                Click the button below to confirm your email address and start tracking:
+                            <p style="color: #6b7280; font-size: 15px; line-height: 1.7; margin: 0 0 30px 0; text-align: center;">
+                                We're so excited to help you on your wellness journey! 🌸<br>
+                                Click the button below to confirm your email and get started:
                             </p>
                             
                             <!-- CTA Button -->
                             <table role="presentation" style="margin: 0 auto;">
                                 <tr>
-                                    <td style="border-radius: 12px; background: linear-gradient(135deg, #4169E1 0%, #002BD8 100%);">
+                                    <td style="border-radius: 16px; background: linear-gradient(135deg, #FFB6D9 0%, #FF8DC7 100%); box-shadow: 0 4px 15px rgba(255, 105, 180, 0.4);">
                                         <a href="{{ .ConfirmationURL }}" 
-                                           style="display: inline-block; padding: 16px 40px; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 12px;">
-                                            ✓ Confirm Your Email
+                                           style="display: inline-block; padding: 18px 45px; color: #ffffff; text-decoration: none; font-weight: 700; font-size: 16px; border-radius: 16px; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                                            💖 Confirm Your Email ✨
                                         </a>
                                     </td>
                                 </tr>
                             </table>
                             
-                            <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 20px 0;">
+                            <p style="color: #9ca3af; font-size: 13px; line-height: 1.6; margin: 30px 0 15px 0; text-align: center;">
                                 Or copy and paste this link into your browser:
                             </p>
                             
-                            <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; word-break: break-all;">
+                            <div style="background: linear-gradient(135deg, #FFF5F7 0%, #F0E6FF 100%); border: 2px solid #FFB6D9; border-radius: 12px; padding: 15px; word-break: break-all;">
                                 <a href="{{ .ConfirmationURL }}" 
-                                   style="color: #4169E1; font-size: 13px; text-decoration: none;">
+                                   style="color: #FF69B4; font-size: 13px; text-decoration: none; font-weight: 500;">
                                     {{ .ConfirmationURL }}
                                 </a>
                             </div>
                             
-                            <p style="color: #9ca3af; font-size: 13px; line-height: 1.6; margin: 30px 0 0 0; font-style: italic;">
-                                <strong>Note:</strong> This confirmation link will expire in 24 hours for security reasons.
-                            </p>
+                            <div style="background: linear-gradient(135deg, #FFF9E6 0%, #FFE5F1 100%); border-left: 4px solid #FFB6D9; border-radius: 8px; padding: 15px; margin: 25px 0 0 0;">
+                                <p style="color: #8b5cf6; font-size: 13px; line-height: 1.6; margin: 0; font-weight: 500;">
+                                    ⏰ <strong>Note:</strong> This magical link expires in 24 hours!
+                                </p>
+                            </div>
                         </td>
                     </tr>
                     
                     <!-- Features Section -->
                     <tr>
                         <td style="padding: 0 30px 30px 30px;">
-                            <div style="background: linear-gradient(135deg, #F4FDFF 0%, #F7E7CE 100%); border-radius: 12px; padding: 25px;">
-                                <h3 style="color: #1f2937; font-size: 18px; margin: 0 0 15px 0; font-weight: 600;">
-                                    What you can track:
+                            <div style="background: linear-gradient(135deg, #FFE5F1 0%, #F0E6FF 100%); border-radius: 16px; padding: 25px; border: 2px solid rgba(255, 182, 217, 0.3);">
+                                <h3 style="background: linear-gradient(135deg, #FF69B4, #DA70D6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 20px; margin: 0 0 20px 0; font-weight: 700; text-align: center;">
+                                    ✨ What You Can Track ✨
                                 </h3>
-                                <ul style="color: #4b5563; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
-                                    <li>📊 Bristol Scale & consistency</li>
-                                    <li>🎨 Color & shape patterns</li>
-                                    <li>⏱️ Duration & frequency</li>
-                                    <li>🩺 Pain levels & symptoms</li>
-                                    <li>📈 Detailed analytics & reports</li>
-                                    <li>☁️ Cloud sync across devices</li>
-                                </ul>
+                                <table role="presentation" style="width: 100%;">
+                                    <tr>
+                                        <td style="padding: 8px 0;">
+                                            <span style="color: #FF69B4; font-size: 18px; margin-right: 10px;">🎀</span>
+                                            <span style="color: #4b5563; font-size: 14px; font-weight: 500;">Bristol Scale & consistency</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0;">
+                                            <span style="color: #DA70D6; font-size: 18px; margin-right: 10px;">�</span>
+                                            <span style="color: #4b5563; font-size: 14px; font-weight: 500;">Color & shape patterns</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0;">
+                                            <span style="color: #FFB6D9; font-size: 18px; margin-right: 10px;">⏱️</span>
+                                            <span style="color: #4b5563; font-size: 14px; font-weight: 500;">Duration & frequency tracking</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0;">
+                                            <span style="color: #FF8DC7; font-size: 18px; margin-right: 10px;">💕</span>
+                                            <span style="color: #4b5563; font-size: 14px; font-weight: 500;">Pain levels & symptoms</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0;">
+                                            <span style="color: #D4A5FF; font-size: 18px; margin-right: 10px;">�</span>
+                                            <span style="color: #4b5563; font-size: 14px; font-weight: 500;">Beautiful analytics & reports</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0;">
+                                            <span style="color: #FFB6D9; font-size: 18px; margin-right: 10px;">☁️</span>
+                                            <span style="color: #4b5563; font-size: 14px; font-weight: 500;">Cloud sync across all devices</span>
+                                        </td>
+                                    </tr>
+                                </table>
                             </div>
                         </td>
                     </tr>
                     
                     <!-- Footer -->
                     <tr>
-                        <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
-                            <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0 0 10px 0;">
-                                If you didn't create an account with Poopy Adventure Tracker, you can safely ignore this email.
+                        <td style="background: linear-gradient(135deg, #FFF5F7 0%, #F0E6FF 100%); padding: 30px; text-align: center; border-top: 2px solid rgba(255, 182, 217, 0.3);">
+                            <p style="color: #6b7280; font-size: 13px; line-height: 1.6; margin: 0 0 15px 0;">
+                                💝 Made with love for <strong style="color: #FF69B4;">Aeri Victoria</strong> ✨
                             </p>
-                            <p style="color: #9ca3af; font-size: 12px; margin: 0;">
-                                © 2025 Poopy Adventure Tracker. Your health, your data, your control.
+                            <p style="color: #9ca3af; font-size: 12px; line-height: 1.5; margin: 0 0 10px 0;">
+                                If you didn't create an account, you can safely ignore this email.
+                            </p>
+                            <p style="color: #b8b8b8; font-size: 11px; margin: 0;">
+                                © 2025 Poopy Adventure Tracker 🌸 Your health, your data, your journey
                             </p>
                         </td>
                     </tr>

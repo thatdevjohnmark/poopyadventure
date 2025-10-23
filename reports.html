@@ -633,94 +633,147 @@
         function updateHealthScore(logs) {
             if (logs.length === 0) {
                 document.getElementById('health-score').textContent = '-';
-                document.getElementById('health-rating').textContent = 'No data available';
+                document.getElementById('health-rating').textContent = 'No data available 📊';
                 document.getElementById('health-score-bar').style.width = '0%';
                 return;
             }
 
-            if (logs.length < 3) {
+            if (logs.length < 1) {  // Changed from 3 to 1 for immediate feedback
                 document.getElementById('health-score').textContent = '-';
-                document.getElementById('health-rating').textContent = 'Need at least 3 entries';
+                document.getElementById('health-rating').textContent = 'Add entries to see score 📝';
                 document.getElementById('health-score-bar').style.width = '0%';
                 return;
             }
 
-            let score = 100;
+            let score = 70;  // Start with a more moderate base score
 
-            // Deduct for non-ideal Bristol types (Types 3-5 are ideal)
-            const avgBristol = logs.reduce((sum, log) => sum + parseInt(log.bristol || 4), 0) / logs.length;
-            if (avgBristol < 2) {
-                score -= 30; // Severe constipation
-            } else if (avgBristol < 3) {
-                score -= 15; // Mild constipation
-            } else if (avgBristol > 6) {
-                score -= 30; // Severe diarrhea
-            } else if (avgBristol > 5) {
-                score -= 15; // Mild diarrhea
+            // Bristol scale analysis (more balanced)
+            const validBristolLogs = logs.filter(log => log.bristol && !isNaN(log.bristol));
+            if (validBristolLogs.length > 0) {
+                const avgBristol = validBristolLogs.reduce((sum, log) => sum + parseInt(log.bristol), 0) / validBristolLogs.length;
+                
+                if (avgBristol >= 3 && avgBristol <= 5) {
+                    score += 15; // Bonus for ideal range
+                } else if (avgBristol >= 2.5 && avgBristol <= 5.5) {
+                    score += 5; // Small bonus for good range
+                } else if (avgBristol < 2) {
+                    score -= 20; // Severe constipation
+                } else if (avgBristol > 6) {
+                    score -= 20; // Severe diarrhea
+                } else {
+                    score -= 10; // Mild issues
+                }
             }
 
-            // Deduct for blood/mucus (check both hasBlood/hasMucus and blood/mucus properties)
+            // Blood/mucus analysis (more nuanced)
             const bloodCount = logs.filter(log => log.hasBlood === true || log.blood === true).length;
             const mucusCount = logs.filter(log => log.hasMucus === true || log.mucus === true).length;
             
             if (bloodCount > 0) {
                 const bloodPct = (bloodCount / logs.length) * 100;
-                score -= bloodPct * 2; // Major concern
+                if (bloodPct > 50) {
+                    score -= 30; // Frequent blood
+                } else if (bloodPct > 20) {
+                    score -= 20; // Occasional blood
+                } else {
+                    score -= 10; // Rare blood
+                }
             }
             
             if (mucusCount > 0) {
                 const mucusPct = (mucusCount / logs.length) * 100;
-                score -= mucusPct * 1; // Moderate concern
+                score -= Math.min(15, mucusPct * 0.3); // Cap mucus penalty
             }
 
-            // Deduct for pain
+            // Pain analysis (more graduated)
             const avgPain = logs.reduce((sum, log) => sum + parseInt(log.pain || 0), 0) / logs.length;
-            score -= avgPain * 4;
+            if (avgPain === 0) {
+                score += 10; // Bonus for no pain
+            } else if (avgPain <= 2) {
+                score -= 5; // Mild pain
+            } else if (avgPain <= 5) {
+                score -= 15; // Moderate pain
+            } else {
+                score -= 25; // Severe pain
+            }
 
-            // Deduct for extreme frequency
-            const days = getDaysSinceFirst(logs);
+            // Frequency analysis (more forgiving)
+            const days = Math.max(1, getDaysSinceFirst(logs));
             const avgPerDay = logs.length / days;
-            if (avgPerDay < 0.5) {
+            if (avgPerDay >= 0.8 && avgPerDay <= 3) {
+                score += 10; // Bonus for healthy frequency
+            } else if (avgPerDay < 0.3) {
                 score -= 10; // Too infrequent
-            } else if (avgPerDay > 4) {
+            } else if (avgPerDay > 5) {
                 score -= 15; // Too frequent
-            } else if (avgPerDay >= 1 && avgPerDay <= 2) {
-                score += 5; // Bonus for ideal frequency
             }
 
-            // Deduct for symptoms
+            // Symptoms analysis (lighter penalty)
             const symptomsCount = logs.filter(log => log.symptoms && log.symptoms.length > 0).length;
-            if (symptomsCount > 0) {
+            if (symptomsCount === 0) {
+                score += 5; // Bonus for no symptoms
+            } else {
                 const symptomPct = (symptomsCount / logs.length) * 100;
-                score -= symptomPct * 0.3;
+                score -= Math.min(10, symptomPct * 0.2); // Cap symptoms penalty
             }
 
-            score = Math.max(0, Math.min(100, Math.round(score)));
+            // Consistency bonus (reward regular patterns)
+            if (logs.length >= 5) {
+                const bristolValues = validBristolLogs.map(log => parseInt(log.bristol));
+                const variance = bristolValues.length > 1 ? 
+                    Math.abs(Math.max(...bristolValues) - Math.min(...bristolValues)) : 0;
+                
+                if (variance <= 1) {
+                    score += 8; // Very consistent
+                } else if (variance <= 2) {
+                    score += 3; // Fairly consistent
+                } else if (variance >= 4) {
+                    score -= 5; // Very inconsistent
+                }
+            }
+
+            // Ensure minimum score of 15 for encouragement
+            score = Math.max(15, Math.min(100, Math.round(score)));
 
             let rating = '';
             let barColor = '';
-            if (score >= 90) {
+            let textColor = 'text-gray-600';
+            
+            if (score >= 85) {
                 rating = 'Excellent! 🌟';
-                barColor = 'from-green-500 to-green-600';
-            } else if (score >= 75) {
-                rating = 'Very Good 👍';
-                barColor = 'from-emerald-500 to-emerald-600';
-            } else if (score >= 60) {
-                rating = 'Good ✓';
-                barColor = 'from-royal-500 to-royal-600';
+                barColor = 'from-green-500 to-emerald-500';
+                textColor = 'text-green-600';
+            } else if (score >= 70) {
+                rating = 'Very Good �';
+                barColor = 'from-emerald-500 to-green-500';
+                textColor = 'text-emerald-600';
+            } else if (score >= 55) {
+                rating = 'Good 👍';
+                barColor = 'from-blue-500 to-royal-500';
+                textColor = 'text-blue-600';
             } else if (score >= 40) {
-                rating = 'Fair ⚠️';
-                barColor = 'from-amber-500 to-amber-600';
+                rating = 'Fair 😐';
+                barColor = 'from-yellow-500 to-orange-500';
+                textColor = 'text-yellow-600';
+            } else if (score >= 25) {
+                rating = 'Needs Attention 💫';
+                barColor = 'from-orange-500 to-red-500';
+                textColor = 'text-orange-600';
             } else {
-                rating = 'Needs Attention ⚠️';
-                barColor = 'from-red-500 to-red-600';
+                rating = 'Keep Tracking 💪';
+                barColor = 'from-red-400 to-pink-500';
+                textColor = 'text-red-500';
             }
 
-            document.getElementById('health-score').textContent = score;
-            document.getElementById('health-rating').textContent = rating;
+            const scoreElement = document.getElementById('health-score');
+            const ratingElement = document.getElementById('health-rating');
             const scoreBar = document.getElementById('health-score-bar');
+            
+            scoreElement.textContent = score;
+            scoreElement.className = `text-6xl font-bold ${textColor} mb-2`;
+            ratingElement.textContent = rating;
             scoreBar.style.width = score + '%';
-            scoreBar.className = `bg-gradient-to-r ${barColor} h-3 rounded-full transition-all`;
+            scoreBar.className = `bg-gradient-to-r ${barColor} h-3 rounded-full transition-all duration-500`;
         }
 
         // Initialize on load

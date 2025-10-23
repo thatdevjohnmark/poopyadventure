@@ -387,13 +387,15 @@
         <div class="glass-card rounded-2xl p-4 shadow-md mb-4 grid grid-cols-3 gap-3">
             <div class="text-center">
                 <div class="text-xs text-gray-500 mb-1 flex items-center justify-center gap-1">
-                    <span>Last Entry</span> 🕐
+                    <i class="fa-solid fa-clock text-pink-500"></i>
+                    <span>Last Entry</span>
                 </div>
                 <div id="last-entry-time" class="text-sm font-bold text-gray-800">-</div>
             </div>
             <div class="text-center border-x border-pink-200">
                 <div class="text-xs text-gray-500 mb-1 flex items-center justify-center gap-1">
-                    <span>Streak</span> 🔥
+                    <i class="fa-solid fa-fire text-orange-500"></i>
+                    <span>Streak</span>
                 </div>
                 <div id="streak-days" class="text-sm font-bold text-pink-600">
                     0 days
@@ -401,7 +403,8 @@
             </div>
             <div class="text-center">
                 <div class="text-xs text-gray-500 mb-1 flex items-center justify-center gap-1">
-                    <span>Score</span> ✨
+                    <i class="fa-solid fa-star text-yellow-500"></i>
+                    <span>Score</span>
                 </div>
                 <div id="health-score" class="text-sm font-bold text-purple-600">-</div>
             </div>
@@ -867,6 +870,40 @@
                     </div>
                 </div>
 
+                <!-- Color Legend -->
+                <div class="glass-card p-4 mb-4 border-2 border-pink-200">
+                    <h3 class="gradient-text text-sm font-bold mb-3 text-center">🎨 Color Legend ✨</h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full border border-white shadow-sm" style="background: #8B4513;"></div>
+                            <span class="text-gray-600 font-medium">Brown</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full border border-white shadow-sm" style="background: #FFD700;"></div>
+                            <span class="text-gray-600 font-medium">Yellow</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full border border-white shadow-sm" style="background: #228B22;"></div>
+                            <span class="text-gray-600 font-medium">Green</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full border border-white shadow-sm" style="background: #DC143C;"></div>
+                            <span class="text-gray-600 font-medium">Red</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full border border-white shadow-sm" style="background: #1a1a1a;"></div>
+                            <span class="text-gray-600 font-medium">Black</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full border border-white shadow-sm" style="background: #FF8C00;"></div>
+                            <span class="text-gray-600 font-medium">Orange</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-center text-gray-500 mt-3">
+                        💡 Multiple colors = multiple sessions that day!
+                    </p>
+                </div>
+
                 <!-- Selected Day Entries -->
                 <div id="selected-day-entries" class="mt-4">
                     <p class="text-gray-400 text-center py-4">Select a day to view entries</p>
@@ -1146,40 +1183,95 @@
                 streakEl.className = 'text-sm font-bold text-gray-400';
             }
 
-            // Health Score (simplified - based on Bristol scale average)
+            // Health Score (comprehensive calculation)
             const healthScoreEl = document.getElementById('health-score');
-            if (logs.length >= 3) {
-                const recentLogs = logs.slice(0, 7);
-                const avgBristol = recentLogs.reduce((sum, log) => sum + (log.bristol || 4), 0) / recentLogs.length;
-                const hasBlood = recentLogs.some(log => log.blood);
+            if (logs.length >= 1) { // Changed from 3 to 1 for immediate feedback
+                const recentLogs = logs.slice(0, 7); // Last 7 entries
+                
+                // Calculate average Bristol scale (convert string to number)
+                const validBristolLogs = recentLogs.filter(log => log.bristol && !isNaN(log.bristol));
+                const avgBristol = validBristolLogs.length > 0 ? 
+                    validBristolLogs.reduce((sum, log) => sum + parseInt(log.bristol), 0) / validBristolLogs.length : 4;
+                
+                // Check for warning signs
+                const hasBlood = recentLogs.some(log => log.hasBlood === true);
+                const hasMucus = recentLogs.some(log => log.hasMucus === true);
                 const highPain = recentLogs.some(log => (log.pain || 0) >= 7);
+                const veryHighPain = recentLogs.some(log => (log.pain || 0) >= 9);
+                
+                // Check consistency (variety in Bristol scale)
+                const bristolValues = validBristolLogs.map(log => parseInt(log.bristol));
+                const bristolVariance = bristolValues.length > 1 ? 
+                    Math.abs(Math.max(...bristolValues) - Math.min(...bristolValues)) : 0;
                 
                 let score = 100;
                 
-                // Ideal Bristol is 3-5
-                if (avgBristol < 2 || avgBristol > 6) score -= 30;
-                else if (avgBristol < 3 || avgBristol > 5) score -= 15;
-                
-                if (hasBlood) score -= 40;
-                if (highPain) score -= 20;
-                
-                score = Math.max(0, Math.min(100, score));
-                
-                let color = 'text-emerald-600';
-                let emoji = '😊';
-                if (score < 60) {
-                    color = 'text-red-600';
-                    emoji = '😟';
-                } else if (score < 80) {
-                    color = 'text-amber-600';
-                    emoji = '😐';
+                // Bristol scale scoring (ideal range 3-5)
+                if (avgBristol >= 3 && avgBristol <= 5) {
+                    score += 0; // Perfect range
+                } else if (avgBristol >= 2.5 && avgBristol <= 5.5) {
+                    score -= 10; // Good range
+                } else if (avgBristol >= 2 && avgBristol <= 6) {
+                    score -= 20; // Okay range
+                } else {
+                    score -= 35; // Concerning range
                 }
                 
-                healthScoreEl.innerHTML = `${emoji} ${score}`;
+                // Consistency scoring
+                if (bristolVariance <= 1) score += 5; // Very consistent
+                else if (bristolVariance >= 4) score -= 15; // Very inconsistent
+                
+                // Warning signs penalties
+                if (veryHighPain) score -= 50;
+                else if (highPain) score -= 30;
+                
+                if (hasBlood) score -= 40;
+                if (hasMucus) score -= 20;
+                
+                // Frequency bonus/penalty
+                const entriesLastWeek = logs.filter(log => {
+                    const logDate = new Date(log.timestamp);
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return logDate >= weekAgo;
+                }).length;
+                
+                if (entriesLastWeek >= 7 && entriesLastWeek <= 21) score += 5; // Good frequency
+                else if (entriesLastWeek < 3) score -= 10; // Too infrequent
+                else if (entriesLastWeek > 35) score -= 15; // Too frequent
+                
+                score = Math.max(0, Math.min(100, Math.round(score)));
+                
+                let color, emoji, status;
+                if (score >= 85) {
+                    color = 'text-emerald-500';
+                    emoji = '🎉';
+                    status = 'Excellent';
+                } else if (score >= 70) {
+                    color = 'text-green-600';
+                    emoji = '😊';
+                    status = 'Good';
+                } else if (score >= 55) {
+                    color = 'text-yellow-600';
+                    emoji = '�';
+                    status = 'Fair';
+                } else if (score >= 40) {
+                    color = 'text-orange-600';
+                    emoji = '😕';
+                    status = 'Poor';
+                } else {
+                    color = 'text-red-600';
+                    emoji = '⚠️';
+                    status = 'Concerning';
+                }
+                
+                healthScoreEl.innerHTML = `${emoji} ${score}%`;
                 healthScoreEl.className = 'text-sm font-bold ' + color;
+                healthScoreEl.title = `Health Status: ${status} - Based on ${recentLogs.length} recent entries`;
             } else {
-                healthScoreEl.textContent = '-';
+                healthScoreEl.innerHTML = '➕ Add entries';
                 healthScoreEl.className = 'text-sm font-bold text-gray-400';
+                healthScoreEl.title = 'Add some entries to see your health score';
             }
         }
 
@@ -1414,6 +1506,51 @@
         let selectedDate = null;
         let viewMode = 'list'; // 'list' or 'calendar'
 
+        // Color mapping for poop colors
+        function getColorStyle(color) {
+            const colorMap = {
+                'Brown': '#8B4513',
+                'Dark Brown': '#5C4033',
+                'Light Brown': '#D2691E',
+                'Yellow': '#FFD700',
+                'Green': '#228B22',
+                'Black': '#1a1a1a',
+                'Red': '#DC143C',
+                'Orange': '#FF8C00',
+                'Tan': '#D2B48C',
+                'Gray': '#808080'
+            };
+            return colorMap[color] || '#9CA3AF';
+        }
+
+        // Create multi-color indicator for multiple sessions
+        function createColorIndicator(colors) {
+            if (colors.length === 0) return '';
+            
+            if (colors.length === 1) {
+                // Single color - full circle
+                return `<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-md" style="background: ${getColorStyle(colors[0])};"></div>`;
+            } else if (colors.length === 2) {
+                // Two colors - split circle
+                return `
+                    <div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-md overflow-hidden" style="background: linear-gradient(90deg, ${getColorStyle(colors[0])} 50%, ${getColorStyle(colors[1])} 50%);">
+                    </div>
+                `;
+            } else if (colors.length === 3) {
+                // Three colors - tri-split
+                return `
+                    <div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-md overflow-hidden" style="background: conic-gradient(${getColorStyle(colors[0])} 0deg 120deg, ${getColorStyle(colors[1])} 120deg 240deg, ${getColorStyle(colors[2])} 240deg 360deg);">
+                    </div>
+                `;
+            } else {
+                // Four or more colors - quad-split or rainbow
+                return `
+                    <div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 border-white shadow-md overflow-hidden" style="background: conic-gradient(${colors.slice(0, 4).map((color, i) => `${getColorStyle(color)} ${i * 90}deg ${(i + 1) * 90}deg`).join(', ')});">
+                    </div>
+                `;
+            }
+        }
+
         function toggleViewMode() {
             viewMode = viewMode === 'list' ? 'calendar' : 'list';
             const calendarView = document.getElementById('calendar-view');
@@ -1456,13 +1593,20 @@
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            // Count entries per day
+            // Organize entries by day with colors
             const entriesByDay = {};
             logs.forEach(log => {
                 const logDate = new Date(log.timestamp);
                 if (logDate.getMonth() === month && logDate.getFullYear() === year) {
                     const day = logDate.getDate();
-                    entriesByDay[day] = (entriesByDay[day] || 0) + 1;
+                    if (!entriesByDay[day]) {
+                        entriesByDay[day] = {
+                            count: 0,
+                            colors: []
+                        };
+                    }
+                    entriesByDay[day].count++;
+                    entriesByDay[day].colors.push(log.color);
                 }
             });
 
@@ -1481,16 +1625,21 @@
                 const isToday = today.getDate() === day && 
                                today.getMonth() === month && 
                                today.getFullYear() === year;
-                const count = entriesByDay[day] || 0;
-                const hasEntries = count > 0;
+                const dayData = entriesByDay[day];
+                const hasEntries = dayData && dayData.count > 0;
+
+                const colorIndicator = hasEntries ? createColorIndicator(dayData.colors) : '';
+                const countBadge = hasEntries && dayData.count > 1 ? 
+                    `<div class="absolute top-1 right-1 w-5 h-5 bg-gradient-to-br from-pink-500 to-purple-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-md">${dayData.count}</div>` : '';
 
                 grid.innerHTML += `
                     <button onclick="selectDay(${day})" 
-                            class="btn-press aspect-square p-1 rounded-xl ${
-                                isToday ? 'bg-royal-100 border-2 border-royal-500' : 'bg-gray-50'
-                            } ${hasEntries ? 'ring-2 ring-royal-400' : ''} relative">
-                        <div class="text-sm font-semibold ${isToday ? 'text-royal-800' : 'text-gray-700'}">${day}</div>
-                        ${hasEntries ? `<div class="absolute bottom-1 left-1/2 -translate-x-1/2 w-5 h-5 bg-royal-600 text-white text-xs rounded-full flex items-center justify-center font-bold">${count}</div>` : ''}
+                            class="btn-press aspect-square p-2 rounded-xl relative transition-all hover:scale-105 ${
+                                isToday ? 'bg-gradient-to-br from-pink-100 to-purple-100 border-2 border-pink-400 shadow-md' : 'bg-white border border-gray-200'
+                            } ${hasEntries ? 'ring-2 ring-pink-300 shadow-sm' : ''}">
+                        <div class="text-sm font-bold ${isToday ? 'text-pink-600' : 'text-gray-700'}">${day}</div>
+                        ${colorIndicator}
+                        ${countBadge}
                     </button>
                 `;
             }

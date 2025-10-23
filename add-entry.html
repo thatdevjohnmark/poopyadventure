@@ -118,6 +118,19 @@
             box-shadow: 0 4px 15px rgba(255, 182, 217, 0.4);
         }
 
+        /* Checkbox styling for shape options */
+        input[type="checkbox"]:checked + label.shape-option {
+            background: linear-gradient(135deg, #FFB6D9 0%, #FF8DC7 100%);
+            border-color: #FF69B4;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+            transform: scale(1.05);
+        }
+
+        input[type="checkbox"]:checked + label.shape-option i {
+            color: white !important;
+        }
+
         /* Progress indicator */
         .progress-step {
             transition: all 0.3s ease;
@@ -470,43 +483,50 @@
                     </div>
                 </div>
 
-                <!-- Shape -->
+                <!-- Shape (Multiple Selection) -->
                 <div class="mb-6">
-                    <label class="block text-sm font-bold text-gray-700 mb-3">Shape</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Shape <span class="text-xs text-gray-500">(Select all that apply)</span></label>
                     <div class="grid grid-cols-3 gap-3">
                         <div>
-                            <input type="radio" name="shape" value="Log" id="shape-log" class="hidden">
-                            <label for="shape-log" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                            <input type="checkbox" name="shape" value="Log" id="shape-log" class="hidden">
+                            <label for="shape-log" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all shape-option">
                                 <i class="fa-solid fa-minus text-royal-600 text-xl mb-2"></i>
                                 <div class="font-semibold text-sm">Log</div>
                             </label>
                         </div>
                         <div>
-                            <input type="radio" name="shape" value="Pellets" id="shape-pellets" class="hidden">
-                            <label for="shape-pellets" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                            <input type="checkbox" name="shape" value="Pellets" id="shape-pellets" class="hidden">
+                            <label for="shape-pellets" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all shape-option">
                                 <i class="fa-solid fa-braille text-royal-600 text-xl mb-2"></i>
                                 <div class="font-semibold text-sm">Pellets</div>
                             </label>
                         </div>
                         <div>
-                            <input type="radio" name="shape" value="Chunks" id="shape-chunks" class="hidden">
-                            <label for="shape-chunks" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                            <input type="checkbox" name="shape" value="Chunks" id="shape-chunks" class="hidden">
+                            <label for="shape-chunks" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all shape-option">
                                 <i class="fa-solid fa-cubes text-royal-600 text-xl mb-2"></i>
                                 <div class="font-semibold text-sm">Chunks</div>
                             </label>
                         </div>
                         <div>
-                            <input type="radio" name="shape" value="Soft" id="shape-soft" class="hidden">
-                            <label for="shape-soft" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                            <input type="checkbox" name="shape" value="Soft" id="shape-soft" class="hidden">
+                            <label for="shape-soft" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all shape-option">
                                 <i class="fa-solid fa-cloud text-royal-600 text-xl mb-2"></i>
                                 <div class="font-semibold text-sm">Soft</div>
                             </label>
                         </div>
                         <div>
-                            <input type="radio" name="shape" value="Liquid" id="shape-liquid" class="hidden">
-                            <label for="shape-liquid" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                            <input type="checkbox" name="shape" value="Liquid" id="shape-liquid" class="hidden">
+                            <label for="shape-liquid" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all shape-option">
                                 <i class="fa-solid fa-droplet text-royal-600 text-xl mb-2"></i>
                                 <div class="font-semibold text-sm">Liquid</div>
+                            </label>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="shape" value="Mushy" id="shape-mushy" class="hidden">
+                            <label for="shape-mushy" class="block text-center p-4 border-2 border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-all shape-option">
+                                <i class="fa-solid fa-blender text-royal-600 text-xl mb-2"></i>
+                                <div class="font-semibold text-sm">Mushy</div>
                             </label>
                         </div>
                     </div>
@@ -914,7 +934,7 @@
             const bristol = formData.get('bristol');
             const color = formData.get('color');
             const volume = formData.get('volume');
-            const shape = formData.get('shape');
+            const shapes = formData.getAll('shape');  // Get all selected shapes
             const smell = formData.get('smell');
             const pain = formData.get('pain');
             const blood = formData.get('blood') ? 'Yes' : 'No';
@@ -932,7 +952,7 @@
                     <div><strong>Bristol:</strong> Type ${bristol}</div>
                     <div><strong>Color:</strong> ${color}</div>
                     <div><strong>Volume:</strong> ${volume}</div>
-                    ${shape ? `<div><strong>Shape:</strong> ${shape}</div>` : ''}
+                    ${shapes.length > 0 ? `<div class="col-span-2"><strong>Shapes:</strong> ${shapes.join(', ')}</div>` : ''}
                     ${smell ? `<div><strong>Smell:</strong> ${smell}</div>` : ''}
                     <div><strong>Pain:</strong> ${pain}/10</div>
                     <div><strong>Blood:</strong> ${blood}</div>
@@ -960,7 +980,7 @@
                     bristol: formData.get('bristol'),
                     color: formData.get('color'),
                     volume: formData.get('volume').toLowerCase(),
-                    shape: formData.get('shape') || '',
+                    shape: formData.getAll('shape').join(', ') || '',  // Join multiple shapes
                     smell: formData.get('smell') || '',
                     pain: parseInt(formData.get('pain')),
                     hasBlood: formData.get('blood') === 'on',
@@ -1002,7 +1022,7 @@
                     bristol: formData.get('bristol'),
                     color: formData.get('color'),
                     volume: formData.get('volume').toLowerCase(),
-                    shape: formData.get('shape') || '',
+                    shape: formData.getAll('shape').join(', ') || '',  // Join multiple shapes
                     smell: formData.get('smell') || '',
                     pain: parseInt(formData.get('pain')),
                     hasBlood: formData.get('blood') === 'on',
