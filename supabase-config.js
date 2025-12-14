@@ -1,11 +1,103 @@
-// Supabase Configuration
-// Replace these with your actual Supabase credentials
+// Supabase Configuration + Offline Fallback
+// This file now provides a unified data layer that works offline.
 
 const SUPABASE_URL = 'https://rhxuivbxxwaccbaltqbr.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoeHVpdmJ4eHdhY2NiYWx0cWJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MTU2OTksImV4cCI6MjA3MzA5MTY5OX0.Yk5jfKhUiS6txrSLNHMFQWT2cECHWpWc_tithtb115A'; // Get this from Supabase dashboard
 
 // Initialize Supabase client
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// --- Offline-first helpers ---
+const LOCAL_STORAGE_KEY = 'poopLogsProV2';
+
+function loadLocal() {
+    try {
+        return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '[]');
+    } catch {
+        return [];
+    }
+}
+
+function saveLocal(entries) {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(entries || []));
+}
+
+async function canReachSupabase() {
+    try {
+        const { error } = await supabaseClient.from('poop_entries').select('id').limit(1);
+        return !error;
+    } catch {
+        return false;
+    }
+}
+
+function isGuestMode() {
+    return localStorage.getItem('guestMode') === 'true';
+}
+
+// Local database implementation with same shape as PoopDB
+const LocalDB = {
+    async getAllEntries() {
+        const data = loadLocal();
+        return data;
+    },
+    async createEntry(entry) {
+        const data = loadLocal();
+        const exists = data.some(e => e.id === entry.id);
+        const clean = {
+            id: entry.id,
+            timestamp: entry.timestamp,
+            duration: entry.duration,
+            bristol: entry.bristol,
+            color: entry.color,
+            volume: entry.volume,
+            shape: entry.shape || null,
+            smell: entry.smell || null,
+            pain: entry.pain,
+            hasBlood: !!entry.hasBlood,
+            hasMucus: !!entry.hasMucus,
+            symptoms: entry.symptoms || [],
+            notes: entry.notes || null
+        };
+        if (!exists) data.unshift(clean);
+        else {
+            const idx = data.findIndex(e => e.id === entry.id);
+            data[idx] = clean;
+        }
+        saveLocal(data);
+        return clean;
+    },
+    async updateEntry(id, updates) {
+        const data = loadLocal();
+        const idx = data.findIndex(e => e.id === id);
+        if (idx === -1) return null;
+        data[idx] = { ...data[idx], ...updates };
+        saveLocal(data);
+        return data[idx];
+    },
+    async deleteEntry(id) {
+        const data = loadLocal().filter(e => e.id !== id);
+        saveLocal(data);
+        return true;
+    },
+    async deleteAllEntries() {
+        saveLocal([]);
+        return true;
+    }
+};
+
+// Choose DB based on availability/guest mode
+let ActiveDB = null;
+async function getDB() {
+    if (ActiveDB) return ActiveDB;
+    if (isGuestMode()) {
+        ActiveDB = LocalDB;
+        return ActiveDB;
+    }
+    const reachable = await canReachSupabase();
+    ActiveDB = reachable ? PoopDB : LocalDB;
+    return ActiveDB;
+}
 
 // Auth helper functions
 const Auth = {
@@ -62,7 +154,7 @@ const Auth = {
     }
 };
 
-// Database helper functions
+// Database helper functions (Supabase)
 const PoopDB = {
     // Get all entries for current user
     async getAllEntries() {
@@ -74,7 +166,7 @@ const PoopDB = {
             
             if (error) throw error;
             
-            // Map snake_case database fields to camelCase for consistency with localStorage
+            // Map snake_case -> camelCase for consistency with LocalDB
             return (data || []).map(entry => ({
                 id: entry.id,
                 timestamp: entry.timestamp,
@@ -219,7 +311,7 @@ const PoopDB = {
         try {
             const entries = await this.getAllEntries();
             
-            // Transform Supabase format to localStorage format
+            // Transform unified format to LocalDB format
             const localFormat = entries.map(entry => ({
                 id: entry.id,
                 timestamp: entry.timestamp,
@@ -230,13 +322,13 @@ const PoopDB = {
                 shape: entry.shape,
                 smell: entry.smell,
                 pain: entry.pain,
-                hasBlood: entry.has_blood,
-                hasMucus: entry.has_mucus,
+                hasBlood: entry.hasBlood,
+                hasMucus: entry.hasMucus,
                 symptoms: entry.symptoms || [],
                 notes: entry.notes
             }));
 
-            localStorage.setItem('poopLogsProV2', JSON.stringify(localFormat));
+            saveLocal(localFormat);
             return { success: true, count: localFormat.length };
         } catch (error) {
             console.error('Error backing up to local:', error);
@@ -245,7 +337,40 @@ const PoopDB = {
     }
 };
 
+// Unified API surface used by pages
+const DB = {
+    async getAllEntries() {
+        const db = await getDB();
+        return db.getAllEntries();
+    },
+    async createEntry(entry) {
+        const db = await getDB();
+        return db.createEntry(entry);
+    },
+    async updateEntry(id, updates) {
+        const db = await getDB();
+        return db.updateEntry(id, updates);
+    },
+    async deleteEntry(id) {
+        const db = await getDB();
+        return db.deleteEntry(id);
+    },
+    async deleteAllEntries() {
+        const db = await getDB();
+        return db.deleteAllEntries();
+    },
+    async syncLocalToSupabase() {
+        // Try to push local changes when online
+        const reachable = await canReachSupabase();
+        if (!reachable) return { success: false, error: 'Supabase unreachable' };
+        return PoopDB.syncLocalToSupabase();
+    },
+    async backupToLocal() {
+        return PoopDB.backupToLocal();
+    }
+};
+
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { PoopDB, supabaseClient };
+    module.exports = { PoopDB, LocalDB, DB, supabaseClient };
 }

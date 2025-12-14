@@ -992,17 +992,9 @@
                 // Check if user is authenticated
                 const isAuth = await Auth.isAuthenticated();
                 
-                if (isAuth) {
-                    // Save to Supabase database
-                    await PoopDB.createEntry(entry);
-                    console.log('✅ Saved to Supabase database');
-                } else {
-                    // Fallback to localStorage for guest mode
-                    let logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
-                    logs.unshift(entry);
-                    localStorage.setItem('poopLogsProV2', JSON.stringify(logs));
-                    console.log('✅ Saved to localStorage (guest mode)');
-                }
+                // Use unified DB (auto offline/guest fallback)
+                await DB.createEntry(entry);
+                console.log('✅ Saved via unified DB (online/offline)');
 
                 // Show success and redirect
                 showSuccessToast('Entry saved successfully!');
@@ -1013,29 +1005,13 @@
             } catch (error) {
                 console.error('Error saving entry:', error);
                 
-                // Fallback to localStorage on error
-                const formData = new FormData(document.getElementById('entry-form'));
-                const entry = {
-                    id: Date.now().toString(),
-                    timestamp: new Date(formData.get('date') + 'T' + formData.get('time')).toISOString(),
-                    duration: parseInt(formData.get('duration')),
-                    bristol: formData.get('bristol'),
-                    color: formData.get('color'),
-                    volume: formData.get('volume').toLowerCase(),
-                    shape: formData.getAll('shape').join(', ') || '',  // Join multiple shapes
-                    smell: formData.get('smell') || '',
-                    pain: parseInt(formData.get('pain')),
-                    hasBlood: formData.get('blood') === 'on',
-                    hasMucus: formData.get('mucus') === 'on',
-                    symptoms: formData.getAll('symptoms'),
-                    notes: formData.get('notes') || ''
-                };
-                
-                let logs = JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
-                logs.unshift(entry);
-                localStorage.setItem('poopLogsProV2', JSON.stringify(logs));
-                
-                alert('⚠️ Saved locally. Error: ' + error.message);
+                // Best-effort local save through unified DB
+                try {
+                    await DB.createEntry(entry);
+                    alert('⚠️ Saved locally due to error.');
+                } catch (e) {
+                    alert('⚠️ Failed to save locally. Error: ' + error.message);
+                }
                 window.location.href = 'mobile-index.html';
             } finally {
                 saveBtn.innerHTML = originalText;

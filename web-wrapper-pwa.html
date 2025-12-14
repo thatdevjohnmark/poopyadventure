@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Poopy Adventure">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#667eea">
+    
+    <title>Poopy Adventure - Progressive Web App</title>
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'>🚽</svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'>🚽</svg>">
+    
+    <!-- Preload important resources -->
+    <link rel="preconnect" href="https://poopyadventure-7lmnqc842-thatdevjohnmarks-projects.vercel.app">
+    
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --accent-color: #f093fb;
+            --text-light: #ffffff;
+            --text-dark: #333333;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --error-color: #ff6b6b;
+            --success-color: #51cf66;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 0.75rem 1rem;
+            color: var(--text-light);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+        
+        .status-indicator.offline {
+            background: var(--error-color);
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .app-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            position: relative;
+        }
+        
+        .phone-frame {
+            width: 375px;
+            max-width: 100%;
+            height: 812px;
+            max-height: calc(100vh - 120px);
+            background: linear-gradient(145deg, #2c3e50, #34495e);
+            border-radius: 40px;
+            padding: 8px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 5px;
+            background: linear-gradient(90deg, #555, #777, #555);
+            border-radius: 3px;
+            z-index: 10;
+        }
+        
+        .phone-frame.fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            border-radius: 0 !important;
+            padding: 0 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 1000 !important;
+        }
+        
+        .phone-frame.fullscreen::before {
+            display: none;
+        }
+        
+        .app-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 32px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .phone-frame.fullscreen .app-iframe {
+            border-radius: 0;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 32px;
+            z-index: 20;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: var(--text-dark);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.5rem;
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+        
+        .controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-light);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            white-space: nowrap;
+        }
+        
+        .btn:hover {
+            background: var(--glass-border);
+            transform: translateY(-1px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn.primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            background: rgba(255, 107, 107, 0.9);
+            padding: 2rem;
+            border-radius: 15px;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+            z-index: 30;
+            display: none;
+        }
+        
+        .error-message h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 70px;
+            right: 1rem;
+            background: var(--success-color);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            transform: translateX(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 200;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .notification.error {
+            background: var(--error-color);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .phone-frame {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+                padding: 0;
+                max-height: none;
+            }
+            
+            .phone-frame::before {
+                display: none;
+            }
+            
+            .app-iframe {
+                border-radius: 0;
+            }
+            
+            .app-container {
+                padding: 0;
+            }
+            
+            .controls {
+                bottom: env(safe-area-inset-bottom, 1rem);
+            }
+        }
+        
+        /* Hide controls in fullscreen on mobile */
+        @media (max-width: 768px) {
+            .phone-frame.fullscreen + .controls {
+                display: none;
+            }
+        }
+        
+        /* Prevent scrolling and zooming */
+        body.no-scroll {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="no-scroll">
+    <div class="header">
+        <div class="header-left">
+            <span>🚽</span>
+            <h1>Poopy Adventure</h1>
+        </div>
+        <div class="header-right">
+            <div class="status-indicator" id="statusIndicator" title="Connection Status"></div>
+        </div>
+    </div>
+    
+    <div class="app-container">
+        <div class="phone-frame" id="phoneFrame">
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+                <div class="loading-text" id="loadingText">Loading your adventure...</div>
+            </div>
+            <iframe 
+                id="appFrame"
+                class="app-iframe"
+                src="https://poopyadventure-7lmnqc842-thatdevjohnmarks-projects.vercel.app/auth.html"
+                title="Poopy Adventure App"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation allow-downloads"
+                loading="eager"
+                importance="high">
+            </iframe>
+        </div>
+        
+        <div class="error-message" id="errorMessage">
+            <h3>🚫 Connection Error</h3>
+            <p>Unable to load your adventure. Please check your internet connection.</p>
+            <button class="btn primary" onclick="retryLoad()" style="margin-top: 1rem;">🔄 Retry</button>
+        </div>
+    </div>
+    
+    <div class="controls" id="controls">
+        <button class="btn" onclick="refreshApp()" title="Refresh App">
+            <span>🔄</span>
+        </button>
+        <button class="btn" onclick="toggleFullscreen()" title="Toggle Fullscreen" id="fullscreenBtn">
+            <span>📱</span>
+        </button>
+        <button class="btn" onclick="openInNewTab()" title="Open in New Tab">
+            <span>🔗</span>
+        </button>
+        <button class="btn" onclick="installPWA()" title="Install App" id="installBtn" style="display: none;">
+            <span>📲</span>
+        </button>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+
+    <script>
+        class PoopyAdventureWrapper {
+            constructor() {
+                this.iframe = document.getElementById('appFrame');
+                this.loadingOverlay = document.getElementById('loadingOverlay');
+                this.loadingText = document.getElementById('loadingText');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.statusIndicator = document.getElementById('statusIndicator');
+                this.phoneFrame = document.getElementById('phoneFrame');
+                this.controls = document.getElementById('controls');
+                this.notification = document.getElementById('notification');
+                
+                this.APP_URL = 'https://poopyadventure-7lmnqc842-thatdevjohnmarks-projects.vercel.app/auth.html';
+                this.isFullscreen = false;
+                this.loadTimeout = null;
+                this.retryCount = 0;
+                this.maxRetries = 3;
+                this.deferredPrompt = null;
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.checkConnection();
+                this.setupPWA();
+                this.handleMobile();
+            }
+            
+            setupEventListeners() {
+                this.iframe.addEventListener('load', () => this.onIframeLoad());
+                this.iframe.addEventListener('error', () => this.onIframeError());
+                
+                window.addEventListener('online', () => this.onOnline());
+                window.addEventListener('offline', () => this.onOffline());
+                window.addEventListener('resize', () => this.onResize());
+                window.addEventListener('orientationchange', () => this.onOrientationChange());
+                
+                // Prevent context menu
+                document.addEventListener('contextmenu', (e) => e.preventDefault());
+                
+                // Hide controls after inactivity
+                let hideTimeout;
+                const resetHideTimeout = () => {
+                    clearTimeout(hideTimeout);
+                    this.controls.classList.remove('hidden');
+                    hideTimeout = setTimeout(() => {
+                        if (this.isFullscreen) {
+                            this.controls.classList.add('hidden');
+                        }
+                    }, 3000);
+                };
+                
+                document.addEventListener('mousemove', resetHideTimeout);
+                document.addEventListener('touchstart', resetHideTimeout);
+            }
+            
+            onIframeLoad() {
+                clearTimeout(this.loadTimeout);
+                setTimeout(() => {
+                    this.loadingOverlay.style.opacity = '0';
+                    setTimeout(() => {
+                        this.loadingOverlay.style.display = 'none';
+                    }, 300);
+                }, 500);
+                
+                this.errorMessage.style.display = 'none';
+                this.statusIndicator.classList.remove('offline');
+                this.retryCount = 0;
+                
+                this.showNotification('🎉 Adventure loaded!', 'success');
+                
+                // Try to optimize iframe content
+                this.optimizeIframeContent();
+            }
+            
+            onIframeError() {
+                clearTimeout(this.loadTimeout);
+                this.loadingOverlay.style.display = 'none';
+                this.errorMessage.style.display = 'block';
+                this.statusIndicator.classList.add('offline');
+                
+                this.showNotification('❌ Failed to load', 'error');
+            }
+            
+            optimizeIframeContent() {
+                setTimeout(() => {
+                    try {
+                        if (this.iframe.contentDocument) {
+                            const style = this.iframe.contentDocument.createElement('style');
+                            style.textContent = `
+                                body { 
+                                    -webkit-user-select: none;
+                                    -webkit-touch-callout: none;
+                                    -webkit-tap-highlight-color: transparent;
+                                    overscroll-behavior: none;
+                                }
+                                * {
+                                    -webkit-overflow-scrolling: touch;
+                                }
+                            `;
+                            this.iframe.contentDocument.head.appendChild(style);
+                        }
+                    } catch (e) {
+                        console.log('Cross-origin restrictions prevent styling');
+                    }
+                }, 1000);
+            }
+            
+            checkConnection() {
+                this.loadTimeout = setTimeout(() => {
+                    if (this.loadingOverlay.style.display !== 'none') {
+                        this.loadingText.innerHTML = 'This is taking longer than expected...<br><small>Checking connection</small>';
+                        this.statusIndicator.classList.add('offline');
+                    }
+                }, 8000);
+            }
+            
+            refreshApp() {
+                this.loadingOverlay.style.display = 'flex';
+                this.loadingOverlay.style.opacity = '1';
+                this.loadingText.textContent = 'Refreshing your adventure...';
+                this.errorMessage.style.display = 'none';
+                
+                // Add cache busting parameter
+                const url = new URL(this.APP_URL);
+                url.searchParams.set('t', Date.now());
+                this.iframe.src = url.toString();
+                
+                this.checkConnection();
+            }
+            
+            toggleFullscreen() {
+                if (!this.isFullscreen) {
+                    this.enterFullscreen();
+                } else {
+                    this.exitFullscreen();
+                }
+            }
+            
+            enterFullscreen() {
+                this.phoneFrame.classList.add('fullscreen');
+                document.querySelector('.header').style.display = 'none';
+                document.getElementById('fullscreenBtn').innerHTML = '<span>📱</span>';
+                this.isFullscreen = true;
+                
+                // Request fullscreen API if available
+                if (this.phoneFrame.requestFullscreen) {
+                    this.phoneFrame.requestFullscreen();
+                } else if (this.phoneFrame.webkitRequestFullscreen) {
+                    this.phoneFrame.webkitRequestFullscreen();
+                }
+                
+                this.showNotification('📱 Fullscreen mode', 'success');
+            }
+            
+            exitFullscreen() {
+                this.phoneFrame.classList.remove('fullscreen');
+                document.querySelector('.header').style.display = 'flex';
+                document.getElementById('fullscreenBtn').innerHTML = '<span>🔍</span>';
+                this.isFullscreen = false;
+                
+                // Exit fullscreen API if active
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                
+                this.showNotification('🪟 Windowed mode', 'success');
+            }
+            
+            openInNewTab() {
+                window.open(this.APP_URL, '_blank', 'noopener,noreferrer');
+                this.showNotification('🔗 Opened in new tab', 'success');
+            }
+            
+            retryLoad() {
+                if (this.retryCount < this.maxRetries) {
+                    this.retryCount++;
+                    this.showNotification(`🔄 Retry ${this.retryCount}/${this.maxRetries}`, 'success');
+                    this.refreshApp();
+                } else {
+                    this.showNotification('❌ Max retries reached', 'error');
+                }
+            }
+            
+            onOnline() {
+                this.statusIndicator.classList.remove('offline');
+                this.showNotification('🌐 Back online!', 'success');
+                if (this.errorMessage.style.display !== 'none') {
+                    this.refreshApp();
+                }
+            }
+            
+            onOffline() {
+                this.statusIndicator.classList.add('offline');
+                this.showNotification('📡 Offline mode', 'error');
+            }
+            
+            onResize() {
+                if (window.innerWidth <= 768 && !this.isFullscreen) {
+                    setTimeout(() => this.enterFullscreen(), 100);
+                }
+            }
+            
+            onOrientationChange() {
+                setTimeout(() => {
+                    if (this.isFullscreen) {
+                        this.iframe.style.height = window.innerHeight + 'px';
+                    }
+                }, 200);
+            }
+            
+            handleMobile() {
+                if (window.innerWidth <= 768) {
+                    setTimeout(() => this.enterFullscreen(), 500);
+                }
+            }
+            
+            showNotification(message, type = 'success') {
+                this.notification.textContent = message;
+                this.notification.className = `notification ${type} show`;
+                
+                setTimeout(() => {
+                    this.notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            setupPWA() {
+                // Register service worker
+                if ('serviceWorker' in navigator) {
+                    this.registerServiceWorker();
+                }
+                
+                // Handle install prompt
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    this.deferredPrompt = e;
+                    document.getElementById('installBtn').style.display = 'flex';
+                });
+            }
+            
+            async registerServiceWorker() {
+                try {
+                    // We'll create a minimal service worker inline
+                    const swCode = `
+                        const CACHE_NAME = 'poopy-adventure-v1';
+                        const urlsToCache = ['/'];
+                        
+                        self.addEventListener('install', (e) => {
+                            e.waitUntil(
+                                caches.open(CACHE_NAME)
+                                    .then((cache) => cache.addAll(urlsToCache))
+                            );
+                        });
+                        
+                        self.addEventListener('fetch', (e) => {
+                            e.respondWith(
+                                caches.match(e.request)
+                                    .then((response) => response || fetch(e.request))
+                            );
+                        });
+                    `;
+                    
+                    const blob = new Blob([swCode], { type: 'application/javascript' });
+                    const swUrl = URL.createObjectURL(blob);
+                    
+                    const registration = await navigator.serviceWorker.register(swUrl);
+                    console.log('Service Worker registered:', registration);
+                } catch (error) {
+                    console.log('Service Worker registration failed:', error);
+                }
+            }
+            
+            async installPWA() {
+                if (this.deferredPrompt) {
+                    this.deferredPrompt.prompt();
+                    const { outcome } = await this.deferredPrompt.userChoice;
+                    
+                    if (outcome === 'accepted') {
+                        this.showNotification('📲 App installed!', 'success');
+                    }
+                    
+                    this.deferredPrompt = null;
+                    document.getElementById('installBtn').style.display = 'none';
+                }
+            }
+        }
+        
+        // Global functions for button handlers
+        let wrapper;
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            wrapper = new PoopyAdventureWrapper();
+        });
+        
+        function refreshApp() {
+            wrapper.refreshApp();
+        }
+        
+        function toggleFullscreen() {
+            wrapper.toggleFullscreen();
+        }
+        
+        function openInNewTab() {
+            wrapper.openInNewTab();
+        }
+        
+        function retryLoad() {
+            wrapper.retryLoad();
+        }
+        
+        function installPWA() {
+            wrapper.installPWA();
+        }
+        
+        console.log('🚽 Poopy Adventure PWA Wrapper Loaded! 🎉');
+    </script>
+    
+    <!-- PWA Manifest -->
+    <script>
+        // Create manifest dynamically
+        const manifest = {
+            name: "Poopy Adventure",
+            short_name: "Poopy Adventure",
+            description: "The ultimate bathroom adventure game!",
+            start_url: "/web-wrapper-pwa.html",
+            display: "standalone",
+            background_color: "#667eea",
+            theme_color: "#667eea",
+            orientation: "portrait",
+            icons: [
+                {
+                    src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚽</text></svg>",
+                    sizes: "192x192",
+                    type: "image/svg+xml"
+                },
+                {
+                    src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚽</text></svg>",
+                    sizes: "512x512",
+                    type: "image/svg+xml"
+                }
+            ]
+        };
+        
+        const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(manifestBlob);
+        
+        const link = document.createElement('link');
+        link.rel = 'manifest';
+        link.href = manifestURL;
+        document.head.appendChild(link);
+    </script>
+</body>
+</html>

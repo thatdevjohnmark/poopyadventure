@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poopy Adventure - Mobile App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            text-align: center;
+            color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .app-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .phone-frame {
+            width: 375px;
+            max-width: 100%;
+            height: 812px;
+            max-height: 80vh;
+            background: #000;
+            border-radius: 40px;
+            padding: 8px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            z-index: 10;
+        }
+        
+        .app-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 32px;
+            background: white;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #666;
+            font-size: 1.1rem;
+            z-index: 5;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        @media (max-width: 768px) {
+            .phone-frame {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+                padding: 0;
+                max-height: none;
+            }
+            
+            .phone-frame::before {
+                display: none;
+            }
+            
+            .app-iframe {
+                border-radius: 0;
+            }
+            
+            .app-container {
+                padding: 0;
+            }
+            
+            .header {
+                display: none;
+            }
+        }
+        
+        .error-message {
+            text-align: center;
+            color: white;
+            background: rgba(255, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem;
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            display: none;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .offline {
+            background: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚽 Poopy Adventure</h1>
+        <p>Mobile Web App Experience</p>
+        <div class="status-indicator" id="statusIndicator"></div>
+    </div>
+    
+    <div class="app-container">
+        <div class="phone-frame">
+            <div class="loading" id="loading">Loading your app...</div>
+            <iframe 
+                id="appFrame"
+                class="app-iframe"
+                src="https://poopyadventure-7lmnqc842-thatdevjohnmarks-projects.vercel.app/auth.html"
+                title="Poopy Adventure App"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"
+                loading="lazy">
+            </iframe>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="refreshApp()">🔄 Refresh</button>
+            <button class="btn" onclick="toggleFullscreen()">📱 Fullscreen</button>
+            <button class="btn" onclick="openInNewTab()">🔗 Open Direct</button>
+        </div>
+    </div>
+    
+    <div class="error-message" id="errorMessage">
+        <h3>Connection Error</h3>
+        <p>Unable to load the app. Please check your internet connection and try again.</p>
+        <button class="btn" onclick="retryLoad()" style="margin-top: 1rem;">Retry</button>
+    </div>
+
+    <script>
+        const iframe = document.getElementById('appFrame');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const APP_URL = 'https://poopyadventure-7lmnqc842-thatdevjohnmarks-projects.vercel.app/auth.html';
+        
+        let loadTimeout;
+        let isFullscreen = false;
+        
+        // Handle iframe loading
+        iframe.addEventListener('load', function() {
+            clearTimeout(loadTimeout);
+            loading.style.display = 'none';
+            errorMessage.style.display = 'none';
+            statusIndicator.classList.remove('offline');
+            
+            // Try to communicate with the iframe
+            try {
+                // Add some mobile-specific styles to the iframe content if possible
+                setTimeout(() => {
+                    try {
+                        if (iframe.contentDocument) {
+                            const style = iframe.contentDocument.createElement('style');
+                            style.textContent = `
+                                body { 
+                                    -webkit-user-select: none;
+                                    -webkit-touch-callout: none;
+                                    -webkit-tap-highlight-color: transparent;
+                                }
+                                * {
+                                    -webkit-overflow-scrolling: touch;
+                                }
+                            `;
+                            iframe.contentDocument.head.appendChild(style);
+                        }
+                    } catch (e) {
+                        console.log('Cross-origin restrictions prevent styling');
+                    }
+                }, 1000);
+            } catch (e) {
+                console.log('Cross-origin restrictions detected');
+            }
+        });
+        
+        iframe.addEventListener('error', function() {
+            clearTimeout(loadTimeout);
+            loading.style.display = 'none';
+            errorMessage.style.display = 'block';
+            statusIndicator.classList.add('offline');
+        });
+        
+        // Set a timeout for loading
+        loadTimeout = setTimeout(() => {
+            if (loading.style.display !== 'none') {
+                loading.innerHTML = 'Taking longer than expected...<br><small>Please check your connection</small>';
+                statusIndicator.classList.add('offline');
+            }
+        }, 10000);
+        
+        // Functions for controls
+        function refreshApp() {
+            loading.style.display = 'block';
+            loading.innerHTML = 'Refreshing...';
+            errorMessage.style.display = 'none';
+            iframe.src = iframe.src; // Reload iframe
+        }
+        
+        function toggleFullscreen() {
+            const phoneFrame = document.querySelector('.phone-frame');
+            const header = document.querySelector('.header');
+            const controls = document.querySelector('.controls');
+            
+            if (!isFullscreen) {
+                phoneFrame.style.width = '100vw';
+                phoneFrame.style.height = '100vh';
+                phoneFrame.style.borderRadius = '0';
+                phoneFrame.style.padding = '0';
+                phoneFrame.style.position = 'fixed';
+                phoneFrame.style.top = '0';
+                phoneFrame.style.left = '0';
+                phoneFrame.style.zIndex = '1000';
+                
+                iframe.style.borderRadius = '0';
+                header.style.display = 'none';
+                controls.style.display = 'none';
+                
+                document.querySelector('.btn').textContent = '📱 Exit Fullscreen';
+                isFullscreen = true;
+            } else {
+                phoneFrame.style.width = '375px';
+                phoneFrame.style.height = '812px';
+                phoneFrame.style.borderRadius = '40px';
+                phoneFrame.style.padding = '8px';
+                phoneFrame.style.position = 'relative';
+                phoneFrame.style.top = 'auto';
+                phoneFrame.style.left = 'auto';
+                phoneFrame.style.zIndex = 'auto';
+                
+                iframe.style.borderRadius = '32px';
+                header.style.display = 'block';
+                controls.style.display = 'flex';
+                
+                document.querySelector('.btn').textContent = '📱 Fullscreen';
+                isFullscreen = false;
+            }
+        }
+        
+        function openInNewTab() {
+            window.open(APP_URL, '_blank');
+        }
+        
+        function retryLoad() {
+            refreshApp();
+        }
+        
+        // Handle window resize for responsive behavior
+        window.addEventListener('resize', function() {
+            if (window.innerWidth <= 768 && !isFullscreen) {
+                toggleFullscreen();
+            }
+        });
+        
+        // Auto-fullscreen on mobile devices
+        if (window.innerWidth <= 768) {
+            setTimeout(() => {
+                toggleFullscreen();
+            }, 1000);
+        }
+        
+        // Handle online/offline status
+        window.addEventListener('online', function() {
+            statusIndicator.classList.remove('offline');
+            if (errorMessage.style.display !== 'none') {
+                refreshApp();
+            }
+        });
+        
+        window.addEventListener('offline', function() {
+            statusIndicator.classList.add('offline');
+        });
+        
+        // Prevent context menu on mobile
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+        
+        // Handle orientation change
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                if (isFullscreen) {
+                    iframe.style.height = window.innerHeight + 'px';
+                }
+            }, 100);
+        });
+        
+        console.log('🚽 Poopy Adventure Web Wrapper Loaded!');
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "app": {
+    "name": "Poopy Adventure",
+    "shortName": "Poopy Adventure",
+    "description": "The ultimate bathroom adventure game!",
+    "url": "https://poopyadventure-7lmnqc842-thatdevjohnmarks-projects.vercel.app/auth.html",
+    "icon": "🚽",
+    "version": "1.0.0"
+  },
+  "wrapper": {
+    "theme": {
+      "primaryColor": "#667eea",
+      "secondaryColor": "#764ba2",
+      "accentColor": "#f093fb"
+    },
+    "features": {
+      "pwa": true,
+      "fullscreen": true,
+      "offline": true,
+      "notifications": true
+    },
+    "mobile": {
+      "autoFullscreen": true,
+      "hideControlsDelay": 3000,
+      "preventZoom": true
+    }
+  },
+  "iframe": {
+    "sandbox": [
+      "allow-scripts",
+      "allow-same-origin", 
+      "allow-forms",
+      "allow-popups",
+      "allow-popups-to-escape-sandbox",
+      "allow-presentation",
+      "allow-downloads"
+    ],
+    "loading": "eager",
+    "importance": "high"
+  }
+}

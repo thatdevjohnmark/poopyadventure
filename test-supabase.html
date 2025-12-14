@@ -89,7 +89,7 @@
                     notes: 'Test entry from test page'
                 };
 
-                const result = await PoopDB.createEntry(testEntry);
+                const result = await DB.createEntry(testEntry);
                 
                 addResult(' Test entry added successfully!', true);
                 addResult('Entry ID: ' + testEntry.id, true);
@@ -103,7 +103,7 @@
             try {
                 addResult('Fetching all entries...');
                 
-                const entries = await PoopDB.getAllEntries();
+                const entries = await DB.getAllEntries();
                 
                 addResult(' Found ' + entries.length + ' entries', true);
                 
