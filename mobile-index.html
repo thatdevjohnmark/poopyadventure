@@ -220,9 +220,60 @@
             background-size: 1000px 100%;
             animation: shimmer 2s infinite;
         }
+
+        /* Year Wrapped Modal */
+        #wrapped-modal {
+            z-index: 9999;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes modalSlideUp {
+            from { transform: translateY(50px) scale(0.9); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        
+        .modal-backdrop {
+            animation: modalFadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
     </style>
 </head>
 <body class="min-h-screen relative overflow-x-hidden overflow-y-auto">
+    <!-- Year Wrapped Modal -->
+    <div id="wrapped-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden modal-backdrop" style="z-index: 9999;">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-gradient-to-br from-purple-500 via-pink-500 to-rose-500 rounded-3xl shadow-2xl max-w-md w-full p-8 text-white relative overflow-hidden modal-content">
+                <!-- Background decorations -->
+                <div class="absolute top-0 right-0 text-8xl opacity-20 float-animation">✨</div>
+                <div class="absolute bottom-0 left-0 text-6xl opacity-20 sparkle-animation">🎉</div>
+                
+                <!-- Content -->
+                <div class="relative z-10 text-center">
+                    <div class="text-7xl mb-4 float-animation">🎊</div>
+                    <h2 class="text-3xl font-bold mb-3">Your 2025 Wrapped</h2>
+                    <p class="text-lg mb-2 opacity-90">is ready!</p>
+                    <p class="text-sm mb-6 opacity-80">See your amazing health journey this year</p>
+                    
+                    <div class="flex flex-col gap-3">
+                        <a href="year-wrapped.html" class="bg-white text-purple-600 px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:scale-105 transition btn-press">
+                            <i class="fa-solid fa-play mr-2"></i>View Wrapped
+                        </a>
+                        <button onclick="closeWrappedModal()" class="bg-white/20 backdrop-blur-md text-white px-6 py-3 rounded-full font-semibold hover:bg-white/30 transition btn-press">
+                            Maybe Later
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Floating decorative elements -->
     <div class="fixed top-10 left-10 text-4xl sparkle-animation opacity-30">✨</div>
     <div class="fixed top-20 right-20 text-3xl float-animation opacity-30">🌸</div>
@@ -1722,6 +1773,27 @@
             await updateKPIs();
             await renderHistory();
             setCurrentDateTime();
+            
+            // Show Year Wrapped modal
+            showWrappedModal();
+        }
+
+        function showWrappedModal() {
+            // Check if user has already seen it today
+            const lastShown = localStorage.getItem('wrappedModalLastShown');
+            const today = new Date().toDateString();
+            
+            if (lastShown !== today) {
+                setTimeout(() => {
+                    document.getElementById('wrapped-modal').classList.remove('hidden');
+                }, 1000); // Show after 1 second delay
+            }
+        }
+
+        function closeWrappedModal() {
+            document.getElementById('wrapped-modal').classList.add('hidden');
+            // Mark as shown for today
+            localStorage.setItem('wrappedModalLastShown', new Date().toDateString());
         }
         
         initializePage();

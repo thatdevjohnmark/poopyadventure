@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#FFB6D9" />
+  <title>✨ Year Wrapped - Poopy Adventure 📅</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            royal: {
+              50: '#fff5f7',
+              100: '#FFE5F1',
+              500: '#ff4d94',
+              600: '#f72585',
+              700: '#e01875',
+              800: '#b91465'
+            },
+            pastel: {
+              pink: '#FFB6D9',
+              purple: '#D4A5FF',
+              blue: '#A5D8FF',
+              mint: '#B8F2E6'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Quicksand:wght@400;500;600;700&display=swap');
+    * { font-family: 'Poppins','Quicksand',sans-serif; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; box-sizing: border-box; }
+    body { overflow: hidden; }
+    .safe-top { padding-top: max(16px, env(safe-area-inset-top)); }
+    .btn-press:active { transform: scale(0.96); }
+    .btn-press { transition: transform 0.1s ease; }
+    
+    /* Slide container */
+    #slides-container { 
+      position: fixed; 
+      inset: 0; 
+      display: flex; 
+      transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+      will-change: transform;
+    }
+    .slide {
+      min-width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(50px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.5) rotate(-5deg); }
+      to { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes bounceIn {
+      0% { opacity: 0; transform: scale(0.3); }
+      50% { opacity: 1; transform: scale(1.1); }
+      70% { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+    @keyframes rotateIn {
+      from { opacity: 0; transform: rotate(-200deg) scale(0); }
+      to { opacity: 1; transform: rotate(0deg) scale(1); }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    .slide.active .animate-in { animation: fadeInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    .slide.active .animate-scale { animation: scaleIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards; }
+    .slide.active .animate-slide { animation: slideInRight 0.7s ease-out forwards; }
+    .slide.active .animate-bounce { animation: bounceIn 1s ease-out forwards; }
+    .slide.active .animate-rotate { animation: rotateIn 0.8s ease-out forwards; }
+    .slide.active .animate-left { animation: slideInLeft 0.7s ease-out forwards; }
+    .animate-float { animation: float 3s ease-in-out infinite; }
+    .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+    
+    /* Progress dots */
+    #progress-dots {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.5rem;
+      z-index: 100;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      transition: all 0.3s ease;
+    }
+    .dot.active {
+      width: 24px;
+      border-radius: 4px;
+      background: white;
+    }
+    
+    /* Navigation buttons */
+    .nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border: none;
+      color: white;
+      font-size: 2rem;
+      padding: 1rem;
+      cursor: pointer;
+      z-index: 100;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .nav-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-50%) scale(1.1); }
+    .nav-btn:active { transform: translateY(-50%) scale(0.95); }
+    #prev-btn { left: 1rem; }
+    #next-btn { right: 1rem; }
+    .nav-btn:disabled { opacity: 0; pointer-events: none; }
+    
+    /* Typography */
+    .mega-text { font-size: clamp(3rem, 15vw, 10rem); font-weight: 900; line-height: 0.9; text-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .big-text { font-size: clamp(2rem, 8vw, 5rem); font-weight: 800; line-height: 1.1; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .label-text { font-size: clamp(1rem, 3vw, 1.5rem); font-weight: 600; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.05em; }
+    .message-text { font-size: clamp(1.5rem, 5vw, 3rem); font-weight: 700; line-height: 1.3; font-style: italic; text-shadow: 0 2px 15px rgba(0,0,0,0.3); }
+    .sparkle { display: inline-block; }
+    
+    /* Gradients */
+    .gradient-1 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .gradient-2 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .gradient-3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .gradient-4 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .gradient-5 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .gradient-6 { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
+    .gradient-7 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+    .gradient-8 { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
+    .gradient-9 { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+    .gradient-10 { background: linear-gradient(135deg, #ff6e7f 0%, #bfe9ff 100%); }
+    
+    /* Close button */
+    #close-btn {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 101;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    #close-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.05); }
+  </style>
+</head>
+<body>
+  <!-- Background Music -->
+  <audio id="bgm" autoplay loop preload="auto">
+    <source src="assets/music/bgm.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Close Button -->
+  <button id="close-btn" onclick="window.location.href='mobile-index.html'">
+    <i class="fa-solid fa-xmark mr-2"></i>Close
+  </button>
+
+  <!-- Mute Button -->
+  <button id="mute-btn" onclick="toggleMute()" style="position: fixed; top: 1rem; left: 1rem; z-index: 101; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); color: white; border: none; padding: 0.75rem; border-radius: 50%; font-size: 1.2rem; cursor: pointer; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+    <i class="fa-solid fa-volume-high"></i>
+  </button>
+
+  <!-- Navigation Buttons -->
+  <button id="prev-btn" class="nav-btn" onclick="prevSlide()">
+    <i class="fa-solid fa-chevron-left"></i>
+  </button>
+  <button id="next-btn" class="nav-btn" onclick="nextSlide()">
+    <i class="fa-solid fa-chevron-right"></i>
+  </button>
+
+  <!-- Progress Dots -->
+  <div id="progress-dots"></div>
+
+  <!-- Slides Container -->
+  <div id="slides-container"></div>
+
+  <script>
+    const year = new Date().getFullYear();
+    let currentSlide = 0;
+    let stats = null;
+    let isMuted = false;
+
+    function toggleMute(){
+      const bgm = document.getElementById('bgm');
+      const muteBtn = document.getElementById('mute-btn');
+      isMuted = !isMuted;
+      bgm.muted = isMuted;
+      muteBtn.innerHTML = isMuted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+    }
+
+    function toggleMenu(){ document.getElementById('side-menu')?.classList.toggle('hidden'); }
+
+    async function setupAuth(){
+      // Auth is simplified for slides - no menu needed
+    }
+
+    async function handleAuthAction(){
+      const isAuth = await Auth.isAuthenticated();
+      if (isAuth){ if (confirm('Are you sure you want to sign out?')) await Auth.signOut(); }
+      else { window.location.href = 'auth.html'; }
+    }
+
+    async function getLogs(){
+      try {
+        const isAuth = await Auth.isAuthenticated();
+        if (isAuth){
+          const entries = await PoopDB.getAllEntries();
+          return entries;
+        } else {
+          return JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+        }
+      } catch(e){
+        console.error('Error fetching logs', e);
+        return JSON.parse(localStorage.getItem('poopLogsProV2') || '[]');
+      }
+    }
+
+    function fmtDateKey(d){ const dd = new Date(d); dd.setHours(0,0,0,0); return dd.toISOString().slice(0,10); }
+    function monthName(i){ return ['January','February','March','April','May','June','July','August','September','October','November','December'][i]; }
+    function weekdayName(i){ return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][i]; }
+
+    function computeWrapped(logs){
+      const yearLogs = logs.filter(l => new Date(l.timestamp).getFullYear() === year);
+      const total = yearLogs.length;
+      const daySet = new Set(yearLogs.map(l => fmtDateKey(l.timestamp)));
+      const activeDays = daySet.size;
+      const startOfYear = new Date(year,0,1);
+      const now = new Date();
+      const daysYTD = Math.floor((now - startOfYear) / (1000*60*60*24)) + 1;
+      const avgPerDay = daysYTD > 0 ? (total / daysYTD) : 0;
+      const avgDuration = total ? (yearLogs.reduce((s,l)=> s + (Number(l.duration)||0), 0)/ total) : 0;
+      const avgPain = total ? (yearLogs.reduce((s,l)=> s + (Number(l.pain)||0), 0)/ total) : 0;
+      const totalMinutes = yearLogs.reduce((s,l)=> s + (Number(l.duration)||0), 0);
+      const totalHours = Math.floor(totalMinutes / 60);
+
+      // Bristol mode + distribution
+      const bDist = { '1':0,'2':0,'3':0,'4':0,'5':0,'6':0,'7':0 };
+      yearLogs.forEach(l => { const b = String(l.bristol||''); if (bDist[b] !== undefined) bDist[b]++; });
+      const mode = total === 0 ? null : Object.entries(bDist).sort((a,b) => b[1]-a[1])[0][0];
+      const healthyCount = (bDist['3'] || 0) + (bDist['4'] || 0);
+      const healthyPercent = total ? Math.round((healthyCount / total) * 100) : 0;
+
+      // Longest streak by days with any entry
+      const sortedDayKeys = Array.from(daySet).sort();
+      let longest = 0, curr = 0, prev = null;
+      sortedDayKeys.forEach(k => {
+        const d = new Date(k);
+        if (prev && (d - prev === 24*60*60*1000)) curr += 1; else curr = 1;
+        longest = Math.max(longest, curr);
+        prev = d;
+      });
+
+      // Monthly distribution
+      const mDist = Array(12).fill(0);
+      yearLogs.forEach(l => { const m = new Date(l.timestamp).getMonth(); mDist[m]++; });
+      const bestMonthIdx = mDist.reduce((bi, v, i) => v > mDist[bi] ? i : bi, 0);
+
+      // Weekday distribution
+      const wDist = Array(7).fill(0);
+      yearLogs.forEach(l => { const w = new Date(l.timestamp).getDay(); wDist[w]++; });
+      const bestWeekdayIdx = wDist.reduce((bi, v, i) => v > wDist[bi] ? i : bi, 0);
+
+      // Weekend vs Weekday
+      const weekendCount = (wDist[0] || 0) + (wDist[6] || 0);
+      const weekdayCount = total - weekendCount;
+
+      // Time of day
+      const hours = yearLogs.map(l => new Date(l.timestamp).getHours());
+      const avgHour = hours.length ? Math.round(hours.reduce((a,b) => a+b, 0) / hours.length) : 0;
+
+      // Morning entries (6am-12pm)
+      const morningCount = yearLogs.filter(l => {
+        const h = new Date(l.timestamp).getHours();
+        return h >= 6 && h < 12;
+      }).length;
+      const morningPercent = total ? Math.round((morningCount / total) * 100) : 0;
+
+      // Low pain entries
+      const lowPainCount = yearLogs.filter(l => (Number(l.pain) || 0) <= 2).length;
+      const lowPainPercent = total ? Math.round((lowPainCount / total) * 100) : 0;
+
+      return { 
+        total, activeDays, avgPerDay, avgDuration, avgPain, bDist, mode, longest, 
+        mDist, bestMonthIdx, wDist, bestWeekdayIdx, avgHour, yearLogs,
+        totalMinutes, totalHours, healthyCount, healthyPercent,
+        weekendCount, weekdayCount, morningPercent, lowPainPercent
+      };
+    }
+
+    function createSlides(stats){
+      const emojiMap = { '1':'🔴','2':'🟠','3':'🟢','4':'🟢','5':'🟢','6':'🟡','7':'🔴' };
+      const bristolEmoji = stats.mode ? (emojiMap[stats.mode] || '💩') : '💩';
+      
+      const slides = [
+        // Slide 0: Welcome
+        {
+          gradient: 'gradient-1',
+          html: `
+            <div class="text-center text-white animate-in">
+              <div class="text-6xl mb-4 animate-float">✨</div>
+              <h1 class="big-text mb-4">Your ${year}</h1>
+              <h2 class="mega-text animate-pulse">Wrapped</h2>
+              <p class="label-text mt-6 opacity-80">Tap or swipe to explore your journey</p>
+            </div>
+          `
+        },
+        
+        // Slide 1: Total entries
+        {
+          gradient: 'gradient-2',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-in">In ${year}, you logged</p>
+              <h2 class="mega-text mb-4 animate-bounce">${stats.total}</h2>
+              <p class="big-text animate-in" style="animation-delay: 0.3s">entries</p>
+              <p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.5s">That's dedication! 💪</p>
+            </div>
+          `
+        },
+
+        // Message slide
+        {
+          gradient: 'gradient-3',
+          html: `
+            <div class="text-center text-white">
+              <div class="text-7xl mb-6 animate-rotate">🌟</div>
+              <p class="message-text animate-in" style="animation-delay: 0.2s">"Every entry is a step<br/>towards better health"</p>
+            </div>
+          `
+        },
+
+        // KPI: Total Time Spent
+        {
+          gradient: 'gradient-4',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-in">Total time tracked</p>
+              <h2 class="mega-text mb-4 animate-bounce">${stats.totalHours}</h2>
+              <p class="big-text animate-slide" style="animation-delay: 0.3s">hours</p>
+              <p class="label-text mt-6 opacity-80 animate-in" style="animation-delay: 0.6s">That's ${stats.totalMinutes.toLocaleString()} minutes! ⏱️</p>
+            </div>
+          `
+        },
+
+        // Slide 2: Active days
+        {
+          gradient: 'gradient-5',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-left">You tracked on</p>
+              <h2 class="mega-text mb-4 animate-bounce">${stats.activeDays}</h2>
+              <p class="big-text animate-slide" style="animation-delay: 0.3s">different days</p>
+              ${stats.activeDays > 100 ? '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Over 100 days! 🎉</p>' : ''}
+            </div>
+          `
+        },
+
+        // KPI: Health Score
+        {
+          gradient: 'gradient-6',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-in">Healthy entries (Type 3-4)</p>
+              <h2 class="mega-text mb-4 animate-rotate">${stats.healthyPercent}%</h2>
+              <p class="big-text animate-slide" style="animation-delay: 0.3s">${stats.healthyCount} entries</p>
+              ${stats.healthyPercent >= 60 ? '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Excellent health! 🌟</p>' : '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Keep improving! 💪</p>'}
+            </div>
+          `
+        },
+
+        // Slide 3: Average per day
+        {
+          gradient: 'gradient-1',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-in">On average, you logged</p>
+              <h2 class="mega-text mb-4 animate-rotate">${stats.avgPerDay.toFixed(1)}</h2>
+              <p class="big-text animate-in" style="animation-delay: 0.3s">times per day</p>
+              ${stats.avgPerDay >= 2 ? '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Regular as clockwork! ⏰</p>' : ''}
+            </div>
+          `
+        },
+
+        // KPI: Morning routine
+        {
+          gradient: 'gradient-2',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-left">Morning entries (6AM-12PM)</p>
+              <h2 class="mega-text mb-4 animate-bounce">${stats.morningPercent}%</h2>
+              <p class="big-text animate-slide" style="animation-delay: 0.3s">of your entries</p>
+              ${stats.morningPercent >= 50 ? '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">You\'re a morning person! ☀️</p>' : '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Evening warrior! 🌙</p>'}
+            </div>
+          `
+        },
+
+        // Message slide
+        {
+          gradient: 'gradient-3',
+          html: `
+            <div class="text-center text-white">
+              <div class="text-7xl mb-6 animate-bounce">💫</div>
+              <p class="message-text animate-in" style="animation-delay: 0.2s">"Consistency is the key<br/>to understanding your body"</p>
+            </div>
+          `
+        },
+
+        // Slide 4: Longest streak
+        {
+          gradient: 'gradient-1',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-left">Your longest streak</p>
+              <h2 class="mega-text mb-4 animate-bounce">${stats.longest}</h2>
+              <p class="big-text animate-slide" style="animation-delay: 0.3s">days in a row</p>
+              ${stats.longest >= 30 ? '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Consistency champion! 🏆</p>' : '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Keep the streak going! 🔥</p>'}
+            </div>
+          `
+        },
+
+        // KPI: Weekday vs Weekend
+        {
+          gradient: 'gradient-4',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-in">Weekday vs Weekend</p>
+              <div class="flex justify-center gap-8 mt-6">
+                <div class="animate-left" style="animation-delay: 0.2s">
+                  <h3 class="big-text mb-2">${stats.weekdayCount}</h3>
+                  <p class="label-text">Weekdays</p>
+                </div>
+                <div class="text-6xl opacity-50 animate-scale" style="animation-delay: 0.3s">vs</div>
+                <div class="animate-slide" style="animation-delay: 0.4s">
+                  <h3 class="big-text mb-2">${stats.weekendCount}</h3>
+                  <p class="label-text">Weekends</p>
+                </div>
+              </div>
+              ${stats.weekdayCount > stats.weekendCount ? '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.7s">Weekday warrior! 💼</p>' : '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.7s">Weekend champion! 🎉</p>'}
+            </div>
+          `
+        },
+
+        // Slide 5: Bristol type
+        {
+          gradient: 'gradient-2',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-in">Your most common Bristol type</p>
+              <div class="text-9xl mb-4 animate-rotate">${bristolEmoji}</div>
+              <h2 class="mega-text mb-4 animate-bounce" style="animation-delay: 0.3s">Type ${stats.mode || '—'}</h2>
+              ${stats.mode === '3' || stats.mode === '4' ? '<p class="label-text mt-6 opacity-80 animate-in" style="animation-delay: 0.6s">Perfect! That\'s the sweet spot 🎯</p>' : '<p class="label-text mt-6 opacity-80 animate-in" style="animation-delay: 0.6s">Every body is unique! 🌟</p>'}
+            </div>
+          `
+        },
+
+        // Message slide
+        {
+          gradient: 'gradient-3',
+          html: `
+            <div class="text-center text-white">
+              <div class="text-7xl mb-6 animate-float">🎨</div>
+              <p class="message-text animate-in" style="animation-delay: 0.2s">"Your health journey<br/>is uniquely yours"</p>
+            </div>
+          `
+        },
+
+        // KPI: Low Pain Rate
+        {
+          gradient: 'gradient-9',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-in">Low pain entries (0-2)</p>
+              <h2 class="mega-text mb-4 animate-rotate">${stats.lowPainPercent}%</h2>
+              <p class="big-text animate-slide" style="animation-delay: 0.3s">comfortable sessions</p>
+              ${stats.lowPainPercent >= 70 ? '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">That\'s wonderful! 😊</p>' : '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Taking care of yourself! 💚</p>'}
+            </div>
+          `
+        },
+
+        // Slide 6: Average duration
+        {
+          gradient: 'gradient-2',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-left">Your average session</p>
+              <h2 class="mega-text mb-4 animate-rotate">${stats.avgDuration.toFixed(1)}</h2>
+              <p class="big-text animate-slide" style="animation-delay: 0.3s">minutes</p>
+              ${stats.avgDuration < 5 ? '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Quick and efficient! ⚡</p>' : '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Taking your time! 📱</p>'}
+            </div>
+          `
+        },
+
+        // Slide 7: Best month
+        {
+          gradient: 'gradient-5',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-in">Your most active month</p>
+              <h2 class="big-text mb-4 animate-bounce">${monthName(stats.bestMonthIdx)}</h2>
+              <h3 class="mega-text mb-4 animate-rotate" style="animation-delay: 0.3s">${stats.mDist[stats.bestMonthIdx]}</h3>
+              <p class="label-text animate-in" style="animation-delay: 0.6s">entries</p>
+            </div>
+          `
+        },
+
+        // Slide 8: Best weekday
+        {
+          gradient: 'gradient-9',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-left">You tracked most on</p>
+              <h2 class="mega-text mb-4 animate-bounce">${weekdayName(stats.bestWeekdayIdx)}s</h2>
+              <p class="big-text animate-slide" style="animation-delay: 0.3s">${stats.wDist[stats.bestWeekdayIdx]} entries</p>
+            </div>
+          `
+        },
+
+        // Message slide
+        {
+          gradient: 'gradient-10',
+          html: `
+            <div class="text-center text-white">
+              <div class="text-7xl mb-6 animate-rotate">⭐</div>
+              <p class="message-text animate-in" style="animation-delay: 0.2s">"Patterns reveal insights,<br/>insights create wellness"</p>
+            </div>
+          `
+        },
+
+        // Slide 9: Typical time
+        {
+          gradient: 'gradient-8',
+          html: `
+            <div class="text-center text-white">
+              <p class="label-text mb-4 animate-in">Your typical time</p>
+              <h2 class="mega-text mb-4 animate-rotate">${stats.avgHour % 12 || 12}${stats.avgHour >= 12 ? 'PM' : 'AM'}</h2>
+              <p class="big-text animate-slide" style="animation-delay: 0.3s">on average</p>
+              ${stats.avgHour >= 6 && stats.avgHour <= 9 ? '<p class="label-text mt-8 opacity-80 animate-in" style="animation-delay: 0.6s">Morning routine! ☀️</p>' : ''}
+            </div>
+          `
+        },
+
+        // Finale message
+        {
+          gradient: 'gradient-1',
+          html: `
+            <div class="text-center text-white">
+              <div class="text-8xl mb-6 animate-float">🌈</div>
+              <p class="message-text mb-6 animate-in" style="animation-delay: 0.2s">"You've taken ${stats.total} steps<br/>towards better health"</p>
+              <p class="label-text animate-in" style="animation-delay: 0.5s">Keep up the amazing work!</p>
+            </div>
+          `
+        },
+
+        // Slide 10: Final
+        {
+          gradient: 'gradient-2',
+          html: `
+            <div class="text-center text-white">
+              <div class="text-6xl mb-4 animate-bounce">🎉</div>
+              <h2 class="big-text mb-4 animate-scale">That's a wrap!</h2>
+              <p class="label-text mb-8 animate-in" style="animation-delay: 0.3s">salamat sa pag tae lablab </p>
+              <button onclick="window.location.href='mobile-index.html'" class="bg-white text-purple-600 px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:scale-105 transition animate-in" style="animation-delay: 0.6s">
+                Back to App
+              </button>
+            </div>
+          `
+        }
+      ];
+
+      return slides;
+    }
+
+    function renderSlides(slides){
+      const container = document.getElementById('slides-container');
+      container.innerHTML = slides.map((slide, i) => 
+        `<div class="slide ${slide.gradient} ${i === 0 ? 'active' : ''}">${slide.html}</div>`
+      ).join('');
+
+      // Render progress dots
+      const dotsContainer = document.getElementById('progress-dots');
+      dotsContainer.innerHTML = slides.map((_, i) => 
+        `<div class="dot ${i === 0 ? 'active' : ''}"></div>`
+      ).join('');
+
+      updateNavButtons();
+    }
+
+    function nextSlide(){
+      const slides = document.querySelectorAll('.slide');
+      if (currentSlide < slides.length - 1){
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide(){
+      if (currentSlide > 0){
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function updateSlide(){
+      const container = document.getElementById('slides-container');
+      container.style.transform = `translateX(-${currentSlide * 100}vw)`;
+
+      // Update active classes
+      document.querySelectorAll('.slide').forEach((slide, i) => {
+        slide.classList.toggle('active', i === currentSlide);
+      });
+      document.querySelectorAll('.dot').forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentSlide);
+      });
+
+      updateNavButtons();
+    }
+
+    function updateNavButtons(){
+      const slides = document.querySelectorAll('.slide');
+      document.getElementById('prev-btn').disabled = currentSlide === 0;
+      document.getElementById('next-btn').disabled = currentSlide === slides.length - 1;
+    }
+
+    // Touch/swipe support
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    document.addEventListener('touchstart', e => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    document.addEventListener('touchend', e => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe(){
+      const threshold = 50;
+      if (touchEndX < touchStartX - threshold) nextSlide();
+      if (touchEndX > touchStartX + threshold) prevSlide();
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+      if (e.key === 'Escape') window.location.href = 'mobile-index.html';
+    });
+
+    async function init(){
+      const logs = await getLogs();
+      stats = computeWrapped(logs);
+      const slides = createSlides(stats);
+      renderSlides(slides);
+      
+      // Play background music immediately
+      const bgm = document.getElementById('bgm');
+      bgm.volume = 0.7;
+      const playPromise = bgm.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          console.log('Autoplay blocked, trying after interaction');
+          // Try again on any user interaction
+          const startMusic = () => {
+            bgm.play();
+            document.removeEventListener('click', startMusic);
+            document.removeEventListener('touchstart', startMusic);
+            document.removeEventListener('keydown', startMusic);
+          };
+          document.addEventListener('click', startMusic);
+          document.addEventListener('touchstart', startMusic);
+          document.addEventListener('keydown', startMusic);
+        });
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
